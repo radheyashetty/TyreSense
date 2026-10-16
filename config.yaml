@@ -1,0 +1,22 @@
+paths:
+  cache_dir: "fastf1_cache"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  reports_dir: "reports"
+  notes_dir: "notes"
+
+seasons:
+  train: [2022, 2023]
+  val: [2024]
+  test: [2025]
+
+cleaning:
+  min_stint_laps: 8
+  max_gap_laps: 3
+  fuel_c: 0.03
+  usable_life_threshold_s: 1.0
+
+model:
+  horizon: 20
+  baseline_causal_lap: 3
+  seed: 42

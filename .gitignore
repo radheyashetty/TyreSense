@@ -1,0 +1,17 @@
+# Data and cache
+data/
+fastf1_cache/
+.fastf1_cache/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+
+# Environment
+.venv/
+venv/
+ENV/
