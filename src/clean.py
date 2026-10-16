@@ -1,71 +1,49 @@
 import os
 import pandas as pd
 from src.download import load_config
-from src.fuel import fuel_correct
+from src.fuel import fuel_correct, compute_fuel_coefficient
 
 
 def is_wet_race(dataframe):
     """Check if race session used any intermediate or wet tyres."""
-    wet_compounds = ["INTERMEDIATE", "WET"]
     compounds = dataframe["Compound"].dropna().str.upper()
-    return compounds.isin(wet_compounds).any()
+    return compounds.isin(["INTERMEDIATE", "WET"]).any()
 
 
-def filter_step(dataframe, mask, filter_name, attrition_list):
+def filter_step(df, mask, filter_name, attrition_list):
     """Apply boolean mask to dataframe and record dropped rows for attrition."""
-    rows_before = len(dataframe)
-    filtered_df = dataframe[mask].copy()
-    rows_dropped = rows_before - len(filtered_df)
-    attrition_list.append({
-        "filter_name": filter_name,
-        "rows_dropped": rows_dropped,
-        "rows_remaining": len(filtered_df)
-    })
+    rows_dropped = len(df) - int(mask.sum())
+    filtered_df = df[mask].copy()
+    attrition_list.append({"filter_name": filter_name, "rows_dropped": rows_dropped, "rows_remaining": len(filtered_df)})
     return filtered_df
 
 
-def apply_basic_filters(dataframe, attrition_list):
-    """Filter lap 1, pit laps, SC/VSC, deleted or inaccurate, and missing fields."""
-    df = filter_step(
-        dataframe, dataframe["LapNumber"] > 1,
-        "drop_lap_one", attrition_list
-    )
+def apply_basic_filters(df, attrition_list):
+    """Filter lap 1, pit laps, SC/VSC, deleted/inaccurate, and missing fields."""
+    df = filter_step(df, df["LapNumber"] > 1, "drop_lap_one", attrition_list)
     pit_mask = df["PitInTime"].isna() & df["PitOutTime"].isna()
     df = filter_step(df, pit_mask, "drop_in_out_laps", attrition_list)
-
     sc_mask = ~df["TrackStatus"].astype(str).str.contains("[4567]")
     df = filter_step(df, sc_mask, "drop_sc_vsc", attrition_list)
-
     acc_mask = df["IsAccurate"].fillna(False).astype(bool)
     if "Deleted" in df.columns:
-        deleted_mask = df["Deleted"] == True
-        acc_mask = acc_mask & (~deleted_mask)
+        acc_mask = acc_mask & (~(df["Deleted"] == True))
     df = filter_step(df, acc_mask, "drop_inaccurate_deleted", attrition_list)
-
     req_cols = ["LapTime", "TrackTemp", "TyreLife", "Compound"]
-    valid_mask = df[req_cols].notna().all(axis=1)
-    df = filter_step(df, valid_mask, "drop_missing_fields", attrition_list)
-    return df
+    return filter_step(df, df[req_cols].notna().all(axis=1), "drop_missing_fields", attrition_list)
 
 
 def split_stints_and_gaps(dataframe, max_gap=3):
     """Split stints on gaps greater than max_gap and assign gap masks."""
-    stint_dfs = []
-    stint_counter = 1
-    drivers = dataframe["Driver"].unique()
-
-    for driver in drivers:
+    stint_dfs, stint_counter = [], 1
+    for driver in dataframe["Driver"].unique():
         driver_df = dataframe[dataframe["Driver"] == driver].sort_values("LapNumber")
-        original_stints = driver_df["Stint"].unique()
-
-        for original_stint in original_stints:
-            sub = driver_df[driver_df["Stint"] == original_stint].copy()
+        for orig_stint in driver_df["Stint"].unique():
+            sub = driver_df[driver_df["Stint"] == orig_stint].copy()
             if len(sub) == 0:
                 continue
-
             sub["lap_diff"] = sub["LapNumber"].diff().fillna(1.0)
             sub["is_split"] = (sub["lap_diff"] > (max_gap + 1)).cumsum()
-
             for _, split_group in sub.groupby("is_split"):
                 group = split_group.copy()
                 group["stint_id"] = f"{group['race_id'].iloc[0]}_{driver}_{stint_counter}"
@@ -73,41 +51,50 @@ def split_stints_and_gaps(dataframe, max_gap=3):
                 group["gap_mask"] = (group["lap_diff"] > 1.0).astype(int)
                 group["stint_lap"] = range(1, len(group) + 1)
                 stint_dfs.append(group)
+    return pd.concat(stint_dfs, ignore_index=True) if stint_dfs else pd.DataFrame()
 
-    if not stint_dfs:
-        return pd.DataFrame()
-    return pd.concat(stint_dfs, ignore_index=True)
+
+def flag_spikes_offline(stint, threshold_s=2.0, recover_s=1.0, window=3):
+    """Flag offline traffic/lockup spikes where pace recovers on next lap."""
+    times = stint["lap_time_fc_s"].values
+    n = len(times)
+    is_spike = [False] * n
+    for i in range(window, n - 1):
+        prev = [times[j] for j in range(i - window, i) if not is_spike[j]]
+        if prev:
+            med = float(pd.Series(prev).median())
+            if (times[i] - med > threshold_s) and (abs(times[i + 1] - med) <= recover_s):
+                is_spike[i] = True
+    return pd.Series(is_spike, index=stint.index)
+
+
+def flag_spikes_causal(history, threshold_s=2.0, window=3):
+    """Flag causal spike for current lap looking only backwards."""
+    times = history["lap_time_fc_s"].values
+    if len(times) <= window:
+        return False
+    med = float(pd.Series(times[-window - 1 : -1]).median())
+    return bool(times[-1] - med > threshold_s)
 
 
 def compute_stint_labels(clean_laps_df, threshold_s=1.0):
     """Compute early-laps baseline, usable life laps, and censoring flag."""
     stints_records = []
-    stint_ids = clean_laps_df["stint_id"].unique()
-
-    for stint_id in stint_ids:
+    for stint_id in clean_laps_df["stint_id"].unique():
         sub = clean_laps_df[clean_laps_df["stint_id"] == stint_id].sort_values("stint_lap")
         early_laps = sub[sub["stint_lap"] <= 3]
         baseline_time_s = float(early_laps["lap_time_fc_s"].mean())
-
         deg_laps = sub[sub["lap_time_fc_s"] >= baseline_time_s + threshold_s]
-        if len(deg_laps) > 0:
-            life_laps = int(deg_laps["stint_lap"].iloc[0])
-            censored = False
-        else:
-            life_laps = int(sub["stint_lap"].max())
-            censored = True
-
+        life_laps = int(deg_laps["stint_lap"].iloc[0]) if len(deg_laps) > 0 else int(sub["stint_lap"].max())
         stints_records.append({
-            "stint_id": stint_id,
-            "baseline_time_s": baseline_time_s,
-            "life_laps": life_laps,
-            "censored": censored
+            "stint_id": stint_id, "baseline_time_s": baseline_time_s,
+            "life_laps": life_laps, "censored": len(deg_laps) == 0
         })
     return pd.DataFrame(stints_records)
 
 
-def prepare_race_columns(raw_df, fuel_c):
-    """Format and derive initial race columns including fuel correction."""
+def prepare_race_columns(raw_df, config):
+    """Format and derive race columns including track-scaled fuel correction."""
     df = raw_df.copy()
     year = int(df["Year"].iloc[0])
     round_num = int(df["RoundNumber"].iloc[0])
@@ -121,18 +108,9 @@ def prepare_race_columns(raw_df, fuel_c):
     df["track_status"] = df["TrackStatus"].astype(str)
     df["tyre_age"] = df["TyreLife"].astype(int)
     df["compound"] = df["Compound"]
-    df["lap_time_fc_s"] = fuel_correct(
-        df["lap_time_s"], df["lap_number"], df["total_laps"], c=fuel_c
-    )
+    fuel_c = compute_fuel_coefficient(df["track_id"].iloc[0], config)
+    df["lap_time_fc_s"] = fuel_correct(df["lap_time_s"], df["lap_number"], df["total_laps"], c=fuel_c)
     return df
-
-
-def filter_stints_pipeline(df, attrition, max_gap, min_laps):
-    """Filter laps, split stints by gaps, and remove short stints."""
-    filtered_df = apply_basic_filters(df, attrition)
-    split_df = split_stints_and_gaps(filtered_df, max_gap=max_gap)
-    stint_lengths = split_df.groupby("stint_id")["stint_lap"].transform("max")
-    return filter_step(split_df, stint_lengths >= min_laps, "drop_short_stints", attrition)
 
 
 def clean_race_dataframe(raw_df, config):
@@ -143,15 +121,24 @@ def clean_race_dataframe(raw_df, config):
         attrition.append({"filter_name": "drop_wet_race", "rows_dropped": initial_count, "rows_remaining": 0})
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(attrition)
 
-    df = prepare_race_columns(raw_df, config["cleaning"]["fuel_c"])
-    clean_laps = filter_stints_pipeline(
-        df, attrition, config["cleaning"]["max_gap_laps"], config["cleaning"]["min_stint_laps"]
-    )
-    cols = [
-        "race_id", "track_id", "driver", "stint_id", "stint_lap", "tyre_age",
-        "compound", "lap_number", "total_laps", "lap_time_s", "lap_time_fc_s",
-        "track_temp_c", "track_status", "gap_mask"
-    ]
+    df = prepare_race_columns(raw_df, config)
+    filtered = apply_basic_filters(df, attrition)
+    split_df = split_stints_and_gaps(filtered, max_gap=config["cleaning"]["max_gap_laps"])
+    stint_lengths = split_df.groupby("stint_id")["stint_lap"].transform("max")
+    clean_laps = filter_step(split_df, stint_lengths >= config["cleaning"]["min_stint_laps"], "drop_short_stints", attrition)
+
+    # Optional offline spike filter
+    if config.get("spike", {}).get("enabled", False) and not clean_laps.empty:
+        th = config["spike"]["threshold_s"]
+        rec = config["spike"]["recover_s"]
+        win = config["spike"]["window"]
+        flags = [flag_spikes_offline(grp, th, rec, win) for _, grp in clean_laps.groupby("stint_id")]
+        spike_flags = pd.concat(flags)
+        clean_laps["gap_mask"] = (clean_laps["gap_mask"] | spike_flags.astype(int)).astype(int)
+        attrition.append({"filter_name": "flag_spikes", "rows_dropped": int(spike_flags.sum()), "rows_remaining": len(clean_laps)})
+
+    cols = ["race_id", "track_id", "driver", "stint_id", "stint_lap", "tyre_age", "compound",
+            "lap_number", "total_laps", "lap_time_s", "lap_time_fc_s", "track_temp_c", "track_status", "gap_mask"]
     clean_laps = clean_laps[cols].copy()
     stints_df = compute_stint_labels(clean_laps, config["cleaning"]["usable_life_threshold_s"])
     return clean_laps, stints_df, pd.DataFrame(attrition)
@@ -160,12 +147,9 @@ def clean_race_dataframe(raw_df, config):
 def process_and_save_all(config_path="config.yaml"):
     """Clean all raw parquet files and save processed datasets with attrition report."""
     config = load_config(config_path)
-    raw_dir = config["paths"]["raw_dir"]
-    proc_dir = config["paths"]["processed_dir"]
-    rep_dir = config["paths"]["reports_dir"]
+    raw_dir, proc_dir, rep_dir = config["paths"]["raw_dir"], config["paths"]["processed_dir"], config["paths"]["reports_dir"]
     os.makedirs(proc_dir, exist_ok=True)
     os.makedirs(rep_dir, exist_ok=True)
-
     all_laps, all_stints, all_att = [], [], []
     for file_name in sorted(os.listdir(raw_dir)):
         if file_name.endswith(".parquet"):
@@ -175,13 +159,8 @@ def process_and_save_all(config_path="config.yaml"):
                 all_laps.append(laps)
                 all_stints.append(stints)
             all_att.append(att)
-
     if all_laps:
-        laps_out = pd.concat(all_laps, ignore_index=True)
-        stints_out = pd.concat(all_stints, ignore_index=True)
-        laps_out.to_parquet(os.path.join(proc_dir, "laps.parquet"), index=False)
-        stints_out.to_parquet(os.path.join(proc_dir, "stints.parquet"), index=False)
+        pd.concat(all_laps, ignore_index=True).to_parquet(os.path.join(proc_dir, "laps.parquet"), index=False)
+        pd.concat(all_stints, ignore_index=True).to_parquet(os.path.join(proc_dir, "stints.parquet"), index=False)
         att_out = pd.concat(all_att, ignore_index=True).groupby("filter_name", sort=False).sum().reset_index()
         att_out.to_csv(os.path.join(rep_dir, "attrition.csv"), index=False)
-        print(f"Processed {len(laps_out)} clean laps and {len(stints_out)} stints.")
-

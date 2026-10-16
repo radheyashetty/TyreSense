@@ -45,3 +45,18 @@
 - What it does: Implements a single-page Streamlit application that replays cached stints lap-by-lap with causal 20-lap forward forecasts and remaining tyre life estimation.
 - Why: Provides an interactive inspection tool to visually verify causal tyre degradation tracking and cliff onset without hindsight leakage.
 - What breaks: Inspecting unobserved future stint laps or attempting online network downloads would violate causality and latency constraints.
+
+## Task T2.1
+- What it does: Implements multi-season FastF1 downloading with automatic disk cache checking and logs tracking data to reports/races.csv.
+- Why: Provides resilient batch downloading across 2022-2025 seasons while guaranteeing zero network overhead on repeated runs.
+- What breaks: Live F1 API rate limits or network drops during initial downloads could produce incomplete parquet chunks without resumption checks.
+
+## Task T2.2
+- What it does: Adds backward-compatible configuration flags and an official FIA circuit lengths lookup table to config.yaml.
+- Why: Allows enabling advanced physics (track-scaled fuel burn, spike filters) without breaking existing Part 1 models or tests.
+- What breaks: Missing circuit names or mismatched keys in the circuit lookup table could cause fuel scaling calculations to fail silently.
+
+## Task T2.3
+- What it does: Upgrades fuel correction with track-distance scaling and implements offline (with recovery check) and causal anomaly spike filters.
+- Why: Eliminates residual slope distortion on short/long tracks and prevents momentary traffic or driver mistakes from corrupting tyre degradation curves.
+- What breaks: Setting spike thresholds too low could filter genuine sharp degradation cliffs, while failing to check recovery would mask permanent pace drops.
