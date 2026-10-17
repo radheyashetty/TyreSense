@@ -26,7 +26,7 @@ def test_models_forward_and_param_counts():
     assert diff_lstm <= 0.05, f"LSTM params ({lstm_p}) differs from GRU ({gru_p}) by {diff_lstm*100:.1f}%"
 
     batch_size, seq_len = 4, 10
-    num_x = torch.randn(batch_size, seq_len, 8)
+    num_x = torch.randn(batch_size, seq_len, 7)
     trk = torch.randint(0, 10, (batch_size, seq_len))
     cmp = torch.randint(0, 5, (batch_size, seq_len))
     for m in [gru, rnn, lstm]:
@@ -35,8 +35,8 @@ def test_models_forward_and_param_counts():
 
 def test_monotone_head_is_non_decreasing():
     """Verify that monotone head produces non-decreasing degradation predictions."""
-    gru_mono = create_gru_model(head="monotone")
-    num_x = torch.randn(3, 10, 8)
+    gru_mono = create_gru_model(head="monotone", num_numeric=7)
+    num_x = torch.randn(3, 10, 7)
     trk = torch.randint(0, 5, (3, 10))
     cmp = torch.randint(0, 3, (3, 10))
     g_now = torch.tensor([0.2, 0.5, 0.8])
@@ -63,7 +63,7 @@ def test_train_epoch_step():
     opt = torch.optim.Adam(gru.parameters(), lr=1e-3)
     loss_fn = torch.nn.HuberLoss(reduction="none", delta=1.0)
     seqs = {
-        "numeric": torch.randn(8, 10, 8).numpy(),
+        "numeric": torch.randn(8, 10, 7).numpy(),
         "track": torch.randint(0, 5, (8, 10)).numpy(),
         "compound": torch.randint(0, 3, (8, 10)).numpy()
     }

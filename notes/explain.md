@@ -76,3 +76,12 @@
 - What it does: Balances parameter counts across GRU (32), LSTM (27), and RNN (58) within 1.6% (< 5%), implements an optional monotone non-decreasing head, and introduces asymmetric Huber loss.
 - Why: Guarantees fair architectural benchmarking for EXP-7, enforces physical monotonicity where tyres cannot spontaneously regain grip, and down-weights one-off driver mistakes.
 - What breaks: An unbalanced parameter budget would confound architectural comparisons with raw capacity differences, while decreasing degradation outputs violate physical realism.
+
+## Task T2.7 (Hypothesis)
+- EXP-4 Hypothesis: Regularization follows a U-shaped validation curve where moderate weight decay (1e-4) and dropout (0.2) minimize validation MAE without underfitting. L1 Lasso penalty produces sparse feature weights on the linear baseline.
+- EXP-5 Hypothesis: Early stopping with patience 15 converges to within 2% of the validation MAE of fixed 150 epochs while stopping early and saving significant training iterations.
+
+## Task T2.7
+- What it does: Executes EXP-4 (L2 decay sweep, dropout rate sweep, and Lasso sparsity) and EXP-5 (early stopping patience vs fixed epochs), recording results to reports/ablation.csv.
+- Why: Validates regularization hyperparameters against overfitting and determines optimal training stopping criteria to conserve compute.
+- What breaks: Over-regularizing with high L1 penalty zeroes out essential tyre wear features, causing validation MAE to spike significantly.
