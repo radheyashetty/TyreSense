@@ -74,35 +74,35 @@ def run_exp4_lasso_sparsity(train_ds, val_ds):
     return results
 
 
+def run_single_patience_trial(pat, train_loader, val_loader, loss_fn, max_epochs):
+    """Run training for a specific patience limit and return best MAE and epochs used."""
+    torch.manual_seed(42)
+    model = create_gru_model()
+    opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    best_loss, patience_counter, epochs_used = float("inf"), 0, 0
+    for ep in range(1, max_epochs + 1):
+        epochs_used = ep
+        train_one_epoch(model, train_loader, opt, loss_fn)
+        val_mae = evaluate_model(model, val_loader)["mae_h1"]
+        if val_mae < best_loss - 1e-4:
+            best_loss, patience_counter = val_mae, 0
+        else:
+            patience_counter += 1
+        if pat < max_epochs and patience_counter >= pat:
+            break
+    return best_loss, epochs_used
+
+
 def run_exp5_early_stopping(train_loader, val_loader, max_epochs=20):
     """EXP-5: Compare early stopping patience (5, 15, 30) vs fixed epochs."""
     results = []
-    patience_list = [5, 15, 30, max_epochs]
     loss_fn = nn.HuberLoss(reduction="none", delta=1.0)
-
-    for pat in patience_list:
-        torch.manual_seed(42)
-        model = create_gru_model()
-        opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
-        best_loss = float("inf")
-        patience_counter, epochs_used = 0, 0
-
-        for ep in range(1, max_epochs + 1):
-            epochs_used = ep
-            train_one_epoch(model, train_loader, opt, loss_fn)
-            val_mae = evaluate_model(model, val_loader)["mae_h1"]
-            if val_mae < best_loss - 1e-4:
-                best_loss = val_mae
-                patience_counter = 0
-            else:
-                patience_counter += 1
-            if pat < max_epochs and patience_counter >= pat:
-                break
-
+    for pat in [5, 15, 30, max_epochs]:
+        best_loss, epochs = run_single_patience_trial(pat, train_loader, val_loader, loss_fn, max_epochs)
         cond = f"patience_{pat}" if pat < max_epochs else f"fixed_{max_epochs}_epochs"
         results.append({
             "experiment": "EXP-5", "condition": cond,
-            "metric": f"val_mae_h1={best_loss:.3f},epochs_used={epochs_used}"
+            "metric": f"val_mae_h1={best_loss:.3f},epochs_used={epochs}"
         })
     return results
 

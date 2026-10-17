@@ -95,3 +95,8 @@
 - What it does: Implements online adaptive tyre wear correction (k-multiplier update) in src/live.py, verifies k-factor dynamics in tests/test_live.py, and formalizes all 5 data leakage tests in tests/test_leakage.py.
 - Why: Provides Model E with online adaptation to real-time track abrasion while proving mathematically and empirically that future laps never leak into past features.
 - What breaks: Allowing k updates on traffic spike laps or before lap 3 causes lap noise to blow up the multiplier outside [0.5, 2.0].
+
+## Task T2.10
+- What it does: Implements 30-pass Monte Carlo Dropout inference in src/uncertainty.py, extracts P10, P50, P90 usable life intervals, and fits interval scale factor s to achieve 80% coverage on validation stints.
+- Why: Provides race engineers with well-calibrated confidence intervals rather than over-confident point forecasts for pit stop strategy.
+- What breaks: Raw uncalibrated MC-dropout intervals are typically too narrow and significantly under-cover true stint variance without post-hoc scaling.
