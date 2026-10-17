@@ -82,6 +82,17 @@ def build_sequences_from_laps(laps_df, seq_len=10):
     return StintSequenceDataset(seqs, np.array(tgt_list))
 
 
+def asymmetric_huber_loss(pred, target, delta=1.0, positive_weight=0.5):
+    """Huber loss with asymmetric weighting for slower-than-predicted laps."""
+    err = pred - target
+    abs_err = torch.abs(err)
+    quad = torch.minimum(abs_err, torch.tensor(delta, device=err.device))
+    lin = abs_err - quad
+    base_loss = 0.5 * (quad ** 2) + delta * lin
+    weights = torch.where(err < 0, torch.tensor(positive_weight, device=err.device), torch.tensor(1.0, device=err.device))
+    return weights * base_loss
+
+
 def masked_loss(pred, target, mask, loss_fn):
     """Compute loss strictly on non-NaN horizon targets."""
     if mask.sum() == 0:

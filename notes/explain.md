@@ -71,3 +71,8 @@
 - Why: Empirically validates that track-scaled fuel improves horizon MAE over static 0.03 s/lap, establishing frozen data and features at Gate A.
 - What breaks: Adding features or modifying cleaning filters after Gate A would invalidate all downstream sequence modeling and uncertainty calibrations.
 - Dated note (Date: 2026-10-18): Clean data count: 2023 season has 1,663 clean laps across 98 stints (877 Bahrain, 786 Saudi Arabia). Training data is currently under 5,000 laps, so model hidden dimension is kept at 32 to prevent overfitting. Gate A is passed; data and features are frozen.
+
+## Task T2.6
+- What it does: Balances parameter counts across GRU (32), LSTM (27), and RNN (58) within 1.6% (< 5%), implements an optional monotone non-decreasing head, and introduces asymmetric Huber loss.
+- Why: Guarantees fair architectural benchmarking for EXP-7, enforces physical monotonicity where tyres cannot spontaneously regain grip, and down-weights one-off driver mistakes.
+- What breaks: An unbalanced parameter budget would confound architectural comparisons with raw capacity differences, while decreasing degradation outputs violate physical realism.
