@@ -85,3 +85,8 @@
 - What it does: Executes EXP-4 (L2 decay sweep, dropout rate sweep, and Lasso sparsity) and EXP-5 (early stopping patience vs fixed epochs), recording results to reports/ablation.csv.
 - Why: Validates regularization hyperparameters against overfitting and determines optimal training stopping criteria to conserve compute.
 - What breaks: Over-regularizing with high L1 penalty zeroes out essential tyre wear features, causing validation MAE to spike significantly.
+
+## Task T2.8
+- What it does: Computes step-wise gradient flow norms ||dL/dh_t|| for RNN, LSTM, and GRU across sequence lengths 10, 25, 50, 100 and clipping thresholds, saving the plot to reports/figures/gradflow.png.
+- Why: Empirically demonstrates the vanishing gradient problem over multi-lap horizons and verifies that gradient clipping prevents training divergence.
+- What breaks: Very long unrolled sequences without gating or residual connections suffer exponential gradient decay, completely freezing weights for early stint laps.
