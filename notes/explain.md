@@ -108,3 +108,8 @@
 - What it does: Implements Pit Window Error (PWE) evaluation comparing FROZEN, ROLLING, and Model E across stint laps 3, 5, 7, paired bootstrap over races, and cliff threshold sensitivity sweeps in src/claim_eval.py.
 - Why: Rigorously verifies the core project claim that online telemetry adaptation produces superior pit stop timing recommendations compared to static pre-race degradation curves.
 - What breaks: Relying on fixed early-stint forecasts fails to capture intra-race track temperature shifts and tyre graining, leading to missed pit windows by multiple laps.
+
+## Task T2.12
+- What it does: Upgrades app.py with a shaded 80% MC-Dropout uncertainty envelope, grey FROZEN lap-2 ghost line comparison, strategic pit window card [P10-2, P50], real-time wear multiplier k gauge, Model picker (A, D, E), and relabels fuel to "Assumed fuel on board".
+- Why: Provides race engineers with an intuitive visual decision-support interface that captures predictive uncertainty and demonstrates the real-time value of telemetry feedback.
+- What breaks: Running dense Monte Carlo simulations directly inside the per-step interactive render loop exceeds the 1.0s latency budget; parametric uncertainty bounds calibrated via EXP-10 preserve real-time responsiveness.
