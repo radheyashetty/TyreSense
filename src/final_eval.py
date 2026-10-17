@@ -9,6 +9,8 @@ from src.download import load_config
 from src.models import create_gru_model
 from src.train import build_sequences_from_laps, evaluate_model, train_one_epoch
 from src.live import compute_cliff_life
+from src.features import fit_baseline_curves
+from src.claim_eval import forecast_stint_pace
 
 
 def get_git_commit_hash():
@@ -63,15 +65,17 @@ def get_stint_diagnostic_reasons():
 def analyze_worst_stints(model, stints_df, laps_df, top_k=10):
     """Identify top K worst predicted stints and record diagnostic reasons."""
     uncensored = stints_df[stints_df["censored"] == False].copy()
+    curves, global_curve = fit_baseline_curves(laps_df)
     errors = []
     for _, row in uncensored.iterrows():
         s_id = row["stint_id"]
         true_life = float(row["life_laps"])
         sub = laps_df[laps_df["stint_id"] == s_id].sort_values("stint_lap")
+        if len(sub) < 3:
+            continue
         trk = sub["track_id"].iloc[0] if "track_id" in sub.columns else "unknown"
         cmp = sub["compound"].iloc[0] if "compound" in sub.columns else "unknown"
-        obs_times = sub["lap_time_fc_s"].values
-        deg = obs_times - float(obs_times[:3].mean()) if len(obs_times) >= 3 else obs_times - obs_times[0]
+        deg = forecast_stint_pace(sub, curves, global_curve, lap_idx=min(2, len(sub) - 1))
         pred_life = compute_cliff_life(deg, threshold_s=1.0)
         p_life = float(pred_life) if pred_life is not None else 20.0
         err = abs(p_life - true_life)
