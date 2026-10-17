@@ -11,11 +11,11 @@ def relu_derivative(x):
     return (x > 0.0).astype(float)
 
 
-def init_mlp_weights(seed=42):
-    """Initialize weights and biases for a 7-16-8-1 MLP using He initialization."""
+def init_mlp_weights(input_dim=8, seed=42):
+    """Initialize weights and biases for an MLP using He initialization."""
     np.random.seed(seed)
     params = {
-        "W1": np.random.randn(7, 16) * np.sqrt(2.0 / 7),
+        "W1": np.random.randn(input_dim, 16) * np.sqrt(2.0 / input_dim),
         "b1": np.zeros((1, 16)),
         "W2": np.random.randn(16, 8) * np.sqrt(2.0 / 16),
         "b2": np.zeros((1, 8)),

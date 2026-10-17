@@ -60,3 +60,8 @@
 - What it does: Upgrades fuel correction with track-distance scaling and implements offline (with recovery check) and causal anomaly spike filters.
 - Why: Eliminates residual slope distortion on short/long tracks and prevents momentary traffic or driver mistakes from corrupting tyre degradation curves.
 - What breaks: Setting spike thresholds too low could filter genuine sharp degradation cliffs, while failing to check recovery would mask permanent pace drops.
+
+## Task T2.4
+- What it does: Adds input 8 (track_temp_delta_c) to feature building and updates the NumPy MLP to an 8-16-8-1 architecture with verified analytical gradients.
+- Why: Captures track cooling/heating trends causally across stints while verifying mathematical rigor and PyTorch parity on the expanded input dimension.
+- What breaks: Calculating temperature delta using future stint laps would leak lookahead information into early lap features.

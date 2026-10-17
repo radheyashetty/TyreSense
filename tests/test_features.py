@@ -5,6 +5,7 @@ from src.features import (
     predict_causal_baseline,
     compute_relative_pace,
     build_7_features,
+    build_stint_features,
     build_horizon_targets,
 )
 
@@ -36,11 +37,9 @@ def test_leakage_2_changing_future_laps_does_not_change_past():
     track_map = {"Bahrain Grand Prix": 1}
     compound_map = {"SOFT": 1}
 
-    # Baseline & features at lap t=5 before change
     orig_baseline = predict_causal_baseline(stint_df, curves, global_curve)
     orig_features = build_7_features(stint_df, track_map, compound_map)
 
-    # Modify future lap (lap 10, index 9)
     modified_stint = stint_df.copy()
     modified_stint.loc[9, "lap_time_fc_s"] += 5.0
     modified_stint.loc[9, "track_temp_c"] += 10.0
@@ -48,7 +47,6 @@ def test_leakage_2_changing_future_laps_does_not_change_past():
     new_baseline = predict_causal_baseline(modified_stint, curves, global_curve)
     new_features = build_7_features(modified_stint, track_map, compound_map)
 
-    # Past laps up to index 4 (lap 5) must be identical
     np.testing.assert_allclose(orig_baseline[:5], new_baseline[:5])
     pd.testing.assert_frame_equal(orig_features.iloc[:5], new_features.iloc[:5])
 
@@ -58,14 +56,12 @@ def test_leakage_5_baseline_curve_is_causal():
     stint_df = create_sample_stint()
     curves, global_curve = fit_baseline_curves(stint_df)
 
-    # Modify lap 8 and verify lap 2 and lap 3 predictions do not change
     mod_stint = stint_df.copy()
-    mod_stint.loc[7, "lap_time_fc_s"] += 10.0  # index 7 is stint lap 8
+    mod_stint.loc[7, "lap_time_fc_s"] += 10.0
 
     orig_baseline = predict_causal_baseline(stint_df, curves, global_curve)
     mod_baseline = predict_causal_baseline(mod_stint, curves, global_curve)
 
-    # Lap 1 and 2 (indices 0, 1) and lap 3 (index 2) must not change
     np.testing.assert_allclose(orig_baseline[:3], mod_baseline[:3])
 
 
@@ -87,8 +83,32 @@ def test_seven_inputs_and_horizon_targets():
     baseline = predict_causal_baseline(stint_df, curves, global_curve)
     targets = build_horizon_targets(stint_df, baseline, horizon=20)
     assert targets.shape == (15, 20)
-    # At lap index 0, horizon 1 is lap index 1
     expected_res_1 = stint_df["lap_time_fc_s"].iloc[1] - baseline[1]
     assert np.isclose(targets[0, 0], expected_res_1)
-    # At lap index 14, horizon 1 has no future lap -> np.nan
     assert np.isnan(targets[14, 0])
+
+
+def test_track_temp_delta_at_lap_one_is_zero():
+    """Verify that track_temp_delta_c is exactly 0.0 at stint lap 1."""
+    stint_df = create_sample_stint()
+    track_map = {"Bahrain Grand Prix": 1}
+    compound_map = {"SOFT": 1}
+    feats = build_stint_features(stint_df, track_map, compound_map, include_temp_delta=True)
+    assert "track_temp_delta_c" in feats.columns
+    assert feats["track_temp_delta_c"].iloc[0] == 0.0
+    expected_delta = stint_df["track_temp_c"].iloc[5] - stint_df["track_temp_c"].iloc[0]
+    assert np.isclose(feats["track_temp_delta_c"].iloc[5], expected_delta)
+
+
+def test_perturbing_future_temp_does_not_change_earlier_features():
+    """Verify that changing temperature at lap t+1 does not change earlier inputs."""
+    stint_df = create_sample_stint()
+    track_map = {"Bahrain Grand Prix": 1}
+    compound_map = {"SOFT": 1}
+
+    orig_feats = build_stint_features(stint_df, track_map, compound_map, include_temp_delta=True)
+    mod_stint = stint_df.copy()
+    mod_stint.loc[10, "track_temp_c"] += 15.0
+
+    mod_feats = build_stint_features(mod_stint, track_map, compound_map, include_temp_delta=True)
+    pd.testing.assert_frame_equal(orig_feats.iloc[:10], mod_feats.iloc[:10])

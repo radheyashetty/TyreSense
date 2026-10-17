@@ -39,12 +39,10 @@ def predict_causal_baseline(stint_df, curves, global_curve, causal_lap=3):
     track = stint_df["track_id"].iloc[0]
     compound = stint_df["compound"].iloc[0]
     params = curves.get((track, compound), global_curve)
-
     tyre_ages = stint_df["tyre_age"].values
     raw_curve = eval_curve(params, tyre_ages)
     baseline_preds = raw_curve.copy()
 
-    # Once causal_lap is reached, shift baseline to match early stint lap level
     stint_laps = stint_df["stint_lap"].values
     early_mask = stint_laps <= causal_lap
     if early_mask.sum() > 0:
@@ -62,25 +60,25 @@ def compute_relative_pace(stint_df, causal_lap=3):
     fc_times = stint_df["lap_time_fc_s"].values
     stint_laps = stint_df["stint_lap"].values
     relative_pace = np.zeros(len(stint_df))
-
     early_mask = stint_laps <= causal_lap
     ref_pace = float(fc_times[early_mask].mean()) if early_mask.sum() > 0 else fc_times[0]
 
     for i in range(len(stint_df)):
-        if stint_laps[i] < causal_lap:
-            curr_ref = float(np.mean(fc_times[: i + 1]))
-        else:
-            curr_ref = ref_pace
+        curr_ref = float(np.mean(fc_times[: i + 1])) if stint_laps[i] < causal_lap else ref_pace
         relative_pace[i] = fc_times[i] - curr_ref
 
     return relative_pace
 
 
+def compute_temp_delta(stint_df):
+    """Calculate causal track temperature delta relative to stint start."""
+    start_temp = float(stint_df["track_temp_c"].iloc[0])
+    return stint_df["track_temp_c"].values - start_temp
+
+
 def build_7_features(stint_df, track_map, compound_map, causal_lap=3):
     """Construct the 7 specified model inputs and gap mask for a stint."""
-    track_id = stint_df["track_id"].iloc[0]
-    track_code = track_map.get(track_id, 0)
-
+    track_code = track_map.get(stint_df["track_id"].iloc[0], 0)
     features = pd.DataFrame()
     features["track"] = [track_code] * len(stint_df)
     features["compound"] = [compound_map.get(c, 0) for c in stint_df["compound"]]
@@ -90,6 +88,14 @@ def build_7_features(stint_df, track_map, compound_map, causal_lap=3):
     features["track_temp"] = stint_df["track_temp_c"].values
     features["track_status"] = pd.to_numeric(stint_df["track_status"], errors="coerce").fillna(1).astype(int).values
     features["gap_mask"] = stint_df["gap_mask"].values
+    return features
+
+
+def build_stint_features(stint_df, track_map, compound_map, causal_lap=3, include_temp_delta=False):
+    """Construct model inputs (7 or 8) and gap mask for a stint."""
+    features = build_7_features(stint_df, track_map, compound_map, causal_lap)
+    if include_temp_delta:
+        features["track_temp_delta_c"] = compute_temp_delta(stint_df)
     return features
 
 
