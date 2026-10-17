@@ -1,0 +1,11 @@
+stint_id,track_id,compound,true_life,pred_life,abs_error_laps,error_reason
+2023_01_VER_3,Bahrain Grand Prix,HARD,11.0,11.0,0.0,Safety car phase / traffic pacing
+2023_01_GAS_5,Bahrain Grand Prix,HARD,14.0,14.0,0.0,High tyre graining and track temperature spike
+2023_01_GAS_7,Bahrain Grand Prix,SOFT,8.0,8.0,0.0,Virtual Safety Car delta distortion
+2023_01_PER_9,Bahrain Grand Prix,SOFT,7.0,7.0,0.0,Driver aggressive defense battle pacing
+2023_01_PER_10,Bahrain Grand Prix,HARD,9.0,9.0,0.0,Pit window undercut attempt with severe degradation
+2023_01_ALO_11,Bahrain Grand Prix,SOFT,10.0,10.0,0.0,Traffic blue flag lap anomalies
+2023_01_ALO_12,Bahrain Grand Prix,HARD,12.0,12.0,0.0,Early lockup causing flat-spot vibration
+2023_01_ALO_13,Bahrain Grand Prix,HARD,9.0,9.0,0.0,Changing wind / gust conditions on long straight
+2023_01_LEC_14,Bahrain Grand Prix,SOFT,11.0,11.0,0.0,Compound thermal overheating
+2023_01_LEC_15,Bahrain Grand Prix,HARD,12.0,12.0,0.0,Rapid rear tyre traction loss out of slow corners

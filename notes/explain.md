@@ -113,3 +113,8 @@
 - What it does: Upgrades app.py with a shaded 80% MC-Dropout uncertainty envelope, grey FROZEN lap-2 ghost line comparison, strategic pit window card [P10-2, P50], real-time wear multiplier k gauge, Model picker (A, D, E), and relabels fuel to "Assumed fuel on board".
 - Why: Provides race engineers with an intuitive visual decision-support interface that captures predictive uncertainty and demonstrates the real-time value of telemetry feedback.
 - What breaks: Running dense Monte Carlo simulations directly inside the per-step interactive render loop exceeds the 1.0s latency budget; parametric uncertainty bounds calibrated via EXP-10 preserve real-time responsiveness.
+
+## Task T2.13
+- What it does: Evaluates the locked Model E on held-out test data exactly once, storing test horizon MAEs (h=1: 1.091s, h=5: 1.209s, h=10: 1.322s) and git commit hash to runs/final/metrics.json, and records diagnostic root causes for worst-case stints in reports/error_analysis.csv.
+- Why: Provides an uncompromised, un-retuned final test benchmark proving true generalizability without data leakage or test set overfitting.
+- What breaks: Opening and repeatedly running training or hyperparameter sweeps against the held-out test split causes subtle test leakage and optimistic performance bias.
