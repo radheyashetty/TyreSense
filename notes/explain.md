@@ -90,3 +90,8 @@
 - What it does: Computes step-wise gradient flow norms ||dL/dh_t|| for RNN, LSTM, and GRU across sequence lengths 10, 25, 50, 100 and clipping thresholds, saving the plot to reports/figures/gradflow.png.
 - Why: Empirically demonstrates the vanishing gradient problem over multi-lap horizons and verifies that gradient clipping prevents training divergence.
 - What breaks: Very long unrolled sequences without gating or residual connections suffer exponential gradient decay, completely freezing weights for early stint laps.
+
+## Task T2.9
+- What it does: Implements online adaptive tyre wear correction (k-multiplier update) in src/live.py, verifies k-factor dynamics in tests/test_live.py, and formalizes all 5 data leakage tests in tests/test_leakage.py.
+- Why: Provides Model E with online adaptation to real-time track abrasion while proving mathematically and empirically that future laps never leak into past features.
+- What breaks: Allowing k updates on traffic spike laps or before lap 3 causes lap noise to blow up the multiplier outside [0.5, 2.0].
