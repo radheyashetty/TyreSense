@@ -1,0 +1,4 @@
+stint_lap,pwe_frozen,pwe_rolling,pwe_mode_e,share_within_2_rolling,share_within_2_mode_e,rolling_vs_frozen_diff,ci_95
+3,3.7,3.13,3.13,0.07,0.07,-0.71,"[-2.71, 1.43]"
+5,3.7,3.94,3.94,0.07,0.07,0.03,"[-3.83, 3.33]"
+7,3.7,4.53,4.53,0.056,0.056,-0.0,"[-2.00, 2.20]"

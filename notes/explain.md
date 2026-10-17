@@ -100,3 +100,11 @@
 - What it does: Implements 30-pass Monte Carlo Dropout inference in src/uncertainty.py, extracts P10, P50, P90 usable life intervals, and fits interval scale factor s to achieve 80% coverage on validation stints.
 - Why: Provides race engineers with well-calibrated confidence intervals rather than over-confident point forecasts for pit stop strategy.
 - What breaks: Raw uncalibrated MC-dropout intervals are typically too narrow and significantly under-cover true stint variance without post-hoc scaling.
+
+## Task T2.11 (Hypothesis)
+- EXP-9 Hypothesis: Online adaptive Model E and rolling residual forecasting significantly reduce Pit Window Error (PWE) compared to frozen lap-2 baselines, with narrower paired bootstrap confidence intervals.
+
+## Task T2.11
+- What it does: Implements Pit Window Error (PWE) evaluation comparing FROZEN, ROLLING, and Model E across stint laps 3, 5, 7, paired bootstrap over races, and cliff threshold sensitivity sweeps in src/claim_eval.py.
+- Why: Rigorously verifies the core project claim that online telemetry adaptation produces superior pit stop timing recommendations compared to static pre-race degradation curves.
+- What breaks: Relying on fixed early-stint forecasts fails to capture intra-race track temperature shifts and tyre graining, leading to missed pit windows by multiple laps.
