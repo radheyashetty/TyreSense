@@ -118,3 +118,43 @@
 - What it does: Evaluates the locked Model E on held-out test data exactly once, storing test horizon MAEs (h=1: 1.091s, h=5: 1.209s, h=10: 1.322s) and git commit hash to runs/final/metrics.json, and records diagnostic root causes for worst-case stints in reports/error_analysis.csv.
 - Why: Provides an uncompromised, un-retuned final test benchmark proving true generalizability without data leakage or test set overfitting.
 - What breaks: Opening and repeatedly running training or hyperparameter sweeps against the held-out test split causes subtle test leakage and optimistic performance bias.
+
+## Task T2.14
+- What it does: Compiles the final comprehensive technical project report in reports/final_report.md covering all 10 experiments, methods, ethical implications, and final test results, and finalizes viva preparation cards.
+- Why: Provides complete scientific and engineering documentation for course evaluation, defense, and reproducibility.
+- What breaks: Omitting negative findings (such as RNN gradient collapse or L1 over-sparsification) weakens the scientific validity of the research conclusions.
+
+---
+
+## Viva Preparation Cards (Key Concepts & Defense)
+
+### 1. Fuel Scaling
+- **Concept**: $c_{\text{track}} = c_{\text{base}} \times (\text{Circuit Length} / 5.0\text{ km})$.
+- **Why**: Fuel mass penalty per lap depends directly on lap distance and engine duty cycle. A 7 km circuit (Spa) burns more fuel per lap than a 3.3 km track (Monaco), so a uniform $0.03\text{ s/lap}$ constant over-penalizes short tracks and under-penalizes long tracks.
+- **Empirical Proof**: Track-scaled fuel yields the lowest residual pace MAE ($0.765\text{ s}$ vs $0.768\text{ s}$ for constant).
+
+### 2. Causal Spike Filtering
+- **Concept**: A lap is flagged as a traffic/anomaly spike if $t_{\text{lap}} - t_{\text{lap}-1} > 2.0\text{ s}$ and subsequent laps recover ($t_{\text{lap}+1} - t_{\text{lap}} < -1.0\text{ s}$).
+- **Why**: In causal online inference, future laps are unseen. In `flag_spikes_causal`, a lap is flagged immediately if pace degrades $> 2.0\text{ s}$ relative to rolling median pace, preventing dirty air or momentary yellow flags from distorting the degradation curve.
+- **What Breaks**: If spikes aren't flagged, single-lap traffic anomalies corrupt the wear multiplier $k$.
+
+### 3. Monotone Head
+- **Concept**: $\hat{y}_{\text{res}}[h] = \hat{y}_{\text{res}}[0] + \sum_{i=1}^h \exp(w_i) \cdot \Delta$.
+- **Why**: Physical tyre wear cannot heal during a dry stint. Enforcing positive incremental outputs via exponential parametrization guarantees non-decreasing degradation predictions.
+- **What Breaks**: Standard unconstrained dense heads frequently predict unphysical pace recovery at long horizons ($h \ge 10$).
+
+### 4. Asymmetric Huber Loss
+- **Concept**: $\mathcal{L}_{\text{asym}}(r) = w_+ \cdot \mathcal{L}_{\text{Huber}}(r)$ if $r > 0$ else $(1 - w_+) \cdot \mathcal{L}_{\text{Huber}}(r)$.
+- **Why**: Underestimating tyre degradation ($r > 0$, where actual lap times are slower than predicted) causes cars to be caught out on worn tyres past the cliff, losing seconds per lap. Asymmetric weighting penalizes optimistic errors more severely.
+
+### 5. Pit Window Error (PWE)
+- **Concept**: $\text{PWE} = |\hat{L}_{\text{cliff}} - L_{\text{cliff}}|$, measuring error in laps until the $+1.0\text{ s}$ degradation cliff.
+- **Why**: MAE in seconds does not directly reflect strategic utility. Race strategists need to know which lap to pit; PWE measures strategy error in actionable units (laps).
+
+### 6. Uncertainty Interval Scale Factor ($s$)
+- **Concept**: $Q_{10} = P_{50} + s \cdot (P_{10} - P_{50})$, $Q_{90} = P_{50} + s \cdot (P_{90} - P_{50})$.
+- **Why**: Raw MC-dropout intervals are typically under-dispersed due to correlated epistemic sampling. Calibrating $s$ via grid search matches empirical coverage to the nominal 80% credible interval on validation data.
+
+### 7. Online Wear Multiplier ($k$)
+- **Concept**: $k_{\text{new}} = \text{clip}\left(k + \eta \cdot \frac{g_t \cdot e_t}{g_t^2 + 0.05},\, 0.5,\, 2.0\right)$.
+- **Why**: Adjusts the pre-race degradation slope $g_t$ up or down based on actual observed residual error $e_t$. The normalized denominator prevents division by zero when baseline degradation is small, and clipping bounds adaptation to physically realistic wear rates.
