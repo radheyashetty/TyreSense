@@ -1,0 +1,8 @@
+filter_name,rows_dropped,rows_remaining
+initial_rows,0,1999
+drop_lap_one,40,1959
+drop_in_out_laps,150,1809
+drop_sc_vsc,66,1743
+drop_inaccurate_deleted,0,1743
+drop_missing_fields,0,1743
+drop_short_stints,80,1663

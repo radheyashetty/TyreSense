@@ -133,8 +133,8 @@ def clean_race_dataframe(raw_df, config):
         rec = config["spike"]["recover_s"]
         win = config["spike"]["window"]
         flags = [flag_spikes_offline(grp, th, rec, win) for _, grp in clean_laps.groupby("stint_id")]
-        spike_flags = pd.concat(flags)
-        clean_laps["gap_mask"] = (clean_laps["gap_mask"] | spike_flags.astype(int)).astype(int)
+        spike_flags = pd.concat(flags).reindex(clean_laps.index).fillna(False)
+        clean_laps["gap_mask"] = (clean_laps["gap_mask"].values | spike_flags.astype(int).values)
         attrition.append({"filter_name": "flag_spikes", "rows_dropped": int(spike_flags.sum()), "rows_remaining": len(clean_laps)})
 
     cols = ["race_id", "track_id", "driver", "stint_id", "stint_lap", "tyre_age", "compound",

@@ -67,9 +67,9 @@ def test_attrition_reconciliation():
     clean_laps, _, attrition_df = clean_race_dataframe(raw_df, config)
 
     initial_rows = int(attrition_df[attrition_df["filter_name"] == "initial_rows"]["rows_remaining"].iloc[0])
-    total_dropped = int(attrition_df["rows_dropped"].sum())
+    drop_rows = int(attrition_df[attrition_df["filter_name"].str.startswith("drop_")]["rows_dropped"].sum())
     clean_count = len(clean_laps)
-    assert initial_rows - total_dropped == clean_count
+    assert initial_rows - drop_rows == clean_count
 
 
 def test_usable_life_and_censoring():

@@ -16,20 +16,20 @@ cleaning:
   fuel_c: 0.03
   usable_life_threshold_s: 1.0
 
-# Part 2 Config Flags (Defaults match Part 1 behavior exactly)
+# Part 2 Config Flags
 fuel:
-  mode: "constant" # constant | track_scaled
+  mode: "track_scaled" # constant | track_scaled
   base_c: 0.03
   ref_km: 5.0
 
 spike:
-  enabled: false
+  enabled: true
   threshold_s: 2.0
   recover_s: 1.0
   window: 3
 
 features:
-  temp_delta: false
+  temp_delta: true
 
 model:
   head: "free" # free | monotone

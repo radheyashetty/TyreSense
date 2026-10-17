@@ -65,3 +65,9 @@
 - What it does: Adds input 8 (track_temp_delta_c) to feature building and updates the NumPy MLP to an 8-16-8-1 architecture with verified analytical gradients.
 - Why: Captures track cooling/heating trends causally across stints while verifying mathematical rigor and PyTorch parity on the expanded input dimension.
 - What breaks: Calculating temperature delta using future stint laps would leak lookahead information into early lap features.
+
+## Task T2.5
+- What it does: Re-runs Part 1 cleaning and experiments with track-scaled fuel, spike filtering, and temperature delta; generates the fuel sensitivity comparison table.
+- Why: Empirically validates that track-scaled fuel improves horizon MAE over static 0.03 s/lap, establishing frozen data and features at Gate A.
+- What breaks: Adding features or modifying cleaning filters after Gate A would invalidate all downstream sequence modeling and uncertainty calibrations.
+- Dated note (Date: 2026-10-18): Clean data count: 2023 season has 1,663 clean laps across 98 stints (877 Bahrain, 786 Saudi Arabia). Training data is currently under 5,000 laps, so model hidden dimension is kept at 32 to prevent overfitting. Gate A is passed; data and features are frozen.

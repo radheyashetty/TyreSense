@@ -6,3 +6,4 @@ drop_sc_vsc,66,1743
 drop_inaccurate_deleted,0,1743
 drop_missing_fields,0,1743
 drop_short_stints,80,1663
+flag_spikes,3,1663
