@@ -1,0 +1,36 @@
+DIAGNOSIS REPORT FOR F1 RACE CONTROL MESSAGES & LAPS
+
+=== 2022 Round 1 ===
+Load [messages=False]: laps=1125, weather=1125, rcm=-1
+  Warnings (1): Driver 16 completed the race distance 00:00.050000 before the recorded end of the session.
+Load [messages=True]: laps=1125, weather=1125, rcm=60
+  Warnings (1): Driver 16 completed the race distance 00:00.050000 before the recorded end of the session.
+HTTP Probe: status=401, bytes=0, url=https://livetiming.formula1.com/static/2022/2022-03-20_Bahrain_Grand_Prix/2022-03-20_Race/RaceControlMessages.jsonStream
+
+=== 2023 Round 1 ===
+Load [messages=False]: laps=1056, weather=1056, rcm=-1
+  Warnings (0): None
+Load [messages=True]: laps=1056, weather=1056, rcm=-1
+  Warnings (1): Failed to load race control messages!
+HTTP Probe: status=401, bytes=0, url=https://livetiming.formula1.com/static/2023/2023-03-05_Bahrain_Grand_Prix/2023-03-05_Race/RaceControlMessages.jsonStream
+
+=== 2023 Round 10 ===
+Load [messages=False]: laps=0, weather=0, rcm=-1
+  Warnings (8): Failed to load session info data!; Failed to load extended driver information!; Failed to load session status data!; Failed to load total lap count!; Failed to load track status data!; Failed to load timing data!; Failed to add first lap time from Ergast for drivers: ['4', '1', '81', '16', '63', '55', '14', '44', '10', '23', '18', '31', '22', '27', '2', '11', '21', '77', '24', '20']; Failed to load weather data!
+Load [messages=True]: laps=0, weather=0, rcm=-1
+  Warnings (9): Failed to load session info data!; Failed to load extended driver information!; Failed to load session status data!; Failed to load total lap count!; Failed to load track status data!; Failed to load timing data!; Failed to add first lap time from Ergast for drivers: ['4', '1', '81', '16', '63', '55', '14', '44', '10', '23', '18', '31', '22', '27', '2', '11', '21', '77', '24', '20']; Failed to load weather data!; Failed to load race control messages!
+HTTP Probe: status=401, bytes=0, url=https://livetiming.formula1.com/static/2023/2023-07-09_British_Grand_Prix/2023-07-09_Race/RaceControlMessages.jsonStream
+
+=== 2024 Round 1 ===
+Load [messages=False]: laps=0, weather=0, rcm=-1
+  Warnings (8): Failed to load session info data!; Failed to load extended driver information!; Failed to load session status data!; Failed to load total lap count!; Failed to load track status data!; Failed to load timing data!; Failed to add first lap time from Ergast for drivers: ['1', '16', '63', '11', '55', '14', '4', '81', '44', '22', '23', '20', '24', '3', '2', '31', '10', '77', '18', '27']; Failed to load weather data!
+Load [messages=True]: laps=0, weather=0, rcm=-1
+  Warnings (9): Failed to load session info data!; Failed to load extended driver information!; Failed to load session status data!; Failed to load total lap count!; Failed to load track status data!; Failed to load timing data!; Failed to add first lap time from Ergast for drivers: ['1', '16', '63', '11', '55', '14', '4', '81', '44', '22', '23', '20', '24', '3', '2', '31', '10', '77', '18', '27']; Failed to load weather data!; Failed to load race control messages!
+HTTP Probe: status=401, bytes=0, url=https://livetiming.formula1.com/static/2024/2024-03-02_Bahrain_Grand_Prix/2024-03-02_Race/RaceControlMessages.jsonStream
+
+=== 2025 Round 1 ===
+Load [messages=False]: laps=0, weather=0, rcm=-1
+  Warnings (8): Failed to load session info data!; Failed to load extended driver information!; Failed to load session status data!; Failed to load total lap count!; Failed to load track status data!; Failed to load timing data!; Failed to add first lap time from Ergast for drivers: ['4', '1', '81', '63', '16', '22', '23', '44', '10', '14', '18', '27', '12', '5', '31', '30', '87']; Failed to load weather data!
+Load [messages=True]: laps=0, weather=0, rcm=-1
+  Warnings (9): Failed to load session info data!; Failed to load extended driver information!; Failed to load session status data!; Failed to load total lap count!; Failed to load track status data!; Failed to load timing data!; Failed to add first lap time from Ergast for drivers: ['4', '1', '81', '63', '16', '22', '23', '44', '10', '14', '18', '27', '12', '5', '31', '30', '87']; Failed to load weather data!; Failed to load race control messages!
+HTTP Probe: status=401, bytes=0, url=https://livetiming.formula1.com/static/2025/2025-03-16_Australian_Grand_Prix/2025-03-16_Race/RaceControlMessages.jsonStream

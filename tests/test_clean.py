@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from src.fuel import fuel_correct, compute_fuel_coefficient
@@ -63,7 +64,10 @@ def test_slow_lap_without_recovery_not_flagged_offline():
 def test_attrition_reconciliation():
     """Verify that initial rows minus all dropped filter rows equals clean row count."""
     config = load_config("config.yaml")
-    raw_df = pd.read_parquet("data/raw/race_2023_01.parquet")
+    parquet_path = "data/raw_old_no_messages/race_2023_01.parquet"
+    if not os.path.exists(parquet_path):
+        parquet_path = "data/raw/race_2022_01.parquet"
+    raw_df = pd.read_parquet(parquet_path)
     clean_laps, _, attrition_df = clean_race_dataframe(raw_df, config)
 
     initial_rows = int(attrition_df[attrition_df["filter_name"] == "initial_rows"]["rows_remaining"].iloc[0])

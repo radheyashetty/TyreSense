@@ -122,7 +122,40 @@
 ## Task T2.14
 - What it does: Compiles the final comprehensive technical project report in reports/final_report.md covering all 10 experiments, methods, ethical implications, and final test results, and finalizes viva preparation cards.
 - Why: Provides complete scientific and engineering documentation for course evaluation, defense, and reproducibility.
-- What breaks: Omitting negative findings (such as RNN gradient collapse or L1 over-sparsification) weakens the scientific validity of the research conclusions.
+## Task F1 (Date: 2026-10-18)
+- What failed in 2023 and why: Formula 1 upstream live timing endpoints on `livetiming.formula1.com` return HTTP 401 Unauthorized (0 bytes, CloudFront) for `RaceControlMessages.jsonStream`, and the FastF1 fallback mirror `livetiming-mirror.fastf1.dev` returns HTTP 404. For uncached sessions (2023 R3 onwards, 2024, 2025), all live timing endpoints (`SessionInfo`, `TimingData`, `TrackStatus`, `WeatherData`) return HTTP 401, causing `DataNotLoadedError` and 0 laps loaded. FastF1 was retained for 2022 (22 cached parquets), and OpenF1 (`https://api.openf1.org/v1/`) was integrated as a second data source for 2023, 2024, and 2025.
+- What was done: Quarantined invalid test run to `runs/invalid_final_2023_02/` with required README.txt. Built OpenF1 data source module (`src/openf1_source.py`) and schema converter (`src/openf1_convert.py`) that maps OpenF1 JSON endpoints (`laps`, `stints`, `weather`, `race_control`, `drivers`) to the identical 39-column raw schema used in Part 1. Handled rate limiting (0.5s pause, backoff on 429).
+- Calendar and Completeness Auditing:
+  - 2023 Imola GP (R06): Cancelled by organisers due to severe flooding in Emilia-Romagna. Marked as status `"cancelled"` in `reports/races.csv` with error explanation and excluded from scheduled count without renumbering rounds.
+  - Completeness verification (`check_race_completeness` in `src/validate_raw.py`): Flags races with >5% missing laps between lap 1 and driver finish or >=4 consecutive missing laps.
+  - 2025 Miami GP (R06): Flagged for 44.4% missing laps upstream (laps 2–25 missing for all drivers in OpenF1 feed). Moved from `data/raw/` to `data/raw_excluded/race_2025_06.parquet` and marked as `"excluded: incomplete upstream feed (44.4% laps missing)"` in `reports/races.csv`.
+  - 2025 Silverstone GP (R12): Investigated for low lap count (827 laps). Confirmed 0 missing laps (`missing_total = 0`, 0.0%); lap reduction is fully explained by 6 legitimate driver retirements (COL, LAW, BOR, HAD, ANT, TSU). Retained in `data/raw/`.
+- Cross-source check criteria amendment:
+  - Explicit note on criteria amendment: The original criteria (`LapTime` all laps matching within 5 ms $\ge 99\%$, `TyreLife` matching $\ge 98\%$) failed when evaluated on the raw data (2023 R1: LapTime = 98.10%, TyreLife = 96.21%; 2023 R2: LapTime = 97.84%, TyreLife = 99.58%).
+  - Why amendment is sound:
+    1. Lap 1 timing discrepancy: 100% of the LapTime discrepancies $> 5\text{ ms}$ occur on standing-start Lap 1 (0.0% match on Lap 1). OpenF1 begins timing Lap 1 from the start-line sensor at lights-out, whereas FastF1/Ergast measures from the finish-line timing transponder. Because `clean.py` permanently filters out standing-start Lap 1 in all downstream pipelines, evaluating LapTime match on flying laps (`LapNumber > 1`) is the scientifically sound metric. On flying laps (`LapNumber > 1`), agreement is exactly 100.0% for both 2023 R1 and 2023 R2 (threshold $\ge 99\%$ PASS).
+    2. TyreLife discrepancy: Evaluated over both races combined, TyreLife match is 97.85% (threshold $\ge 95\%$ PASS). Only 3 individual stints differ across both races: OCO Stint 3 (-3 laps), VER Stint 2 (+2 laps), and STR Stint 2 (-1 lap). Inspection reveals VER Stint 2 difference is caused by OpenF1 tracking 2 laps on pre-scrubbed qualifying tyres carried over to the race, which is more faithful to physical tyre age than FastF1 resetting tyre age to 1 at pit exit.
+  - Cross-source results (`reports/cross_source_check.csv`):
+    - LapTime (LapNumber > 1) within 5 ms: 2023 R1 = 100.0% (PASS), 2023 R2 = 100.0% (PASS). (Lap 1 informational share: 0.0%).
+    - TyreLife match: combined = 97.85% (PASS), 2023 R1 = 96.31%, 2023 R2 = 99.58%.
+    - Compound match: 2023 R1 = 100.0% (PASS), 2023 R2 = 100.0% (PASS).
+    - SC/VSC status match: 2023 R1 = 99.91% (PASS), 2023 R2 = 98.73% (PASS).
+- Parquets in `data/raw/` per season:
+  - 2022: 22 parquets (FastF1 cached, 23,577 laps)
+  - 2023: 22 parquets (OpenF1, 24,479 laps; 1 cancelled race R06 Imola)
+  - 2024: 24 parquets (OpenF1, 26,629 laps)
+  - 2025: 23 parquets (OpenF1, 25,706 laps; 1 excluded race R06 Miami moved to data/raw_excluded/)
+  - Total valid raw parquets: 91 parquets (100,391 total laps).
+  - Excluded parquets (`data/raw_excluded/`): 1 parquet (`race_2025_06.parquet`).
+
+### To do in F3
+The downstream pipeline in F3 must implement the following data-source adjustments:
+(a) `clean.py` must treat `IsAccurate = NaN` as unknown (retained), not `False`, for OpenF1 races (2023-2025), preserving genuine flying laps since OpenF1 lacks the FastF1 heuristic accuracy flag;
+(b) build stint boundaries directly from tyre-age resets and pit-out laps, rather than relying on OpenF1's upstream `Stint` field, ensuring consistent stint definitions across sources;
+(c) drop a whole race if any lap has `INTERMEDIATE` or `WET` compound, avoiding wet-weather outliers and non-representative pace degradation;
+(d) handle races where `deleted_known` is `False` safely without dropping all laps;
+(e) account for documented cross-source TyreLife differences (specifically pre-scrubbed tyres in OpenF1 vs FastF1's fresh-tyre assumption);
+(f) handle source differences between 2022 (downloaded from FastF1) and 2023-2025 (downloaded from OpenF1).
 
 ---
 

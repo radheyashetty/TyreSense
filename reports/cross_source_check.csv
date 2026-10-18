@@ -1,0 +1,3 @@
+race_id,laps_compared,lap_time_flying_5ms_share,lap_time_lap1_5ms_share,tyre_life_match_share,compound_match_share,pit_flags_match_share,sc_vsc_match_share
+2023_01,1056,1.0,0.0,0.9631,1.0,0.9981,0.9991
+2023_02,943,1.0,0.0,0.9958,1.0,0.9989,0.9873

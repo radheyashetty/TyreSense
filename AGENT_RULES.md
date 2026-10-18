@@ -46,3 +46,19 @@ Style example (this is the level to aim for):
 ## Hand-written by the student (agent only reviews, does not write)
 numpy MLP + gradient check (T1.6), live-correction loop (T2.2), fuel function (T1.2).
 For these tasks: read my file, list bugs and unclear parts in 5 bullets, nothing else.
+
+## Results and reporting
+1. A number may appear in the report, README or app text only if it is read from a file in
+   reports/ or runs/ by code, or copied from such a file with the file name given next to it.
+2. Never write a result sentence before the experiment has run. Hypotheses are written first
+   and are labelled "hypothesis".
+3. Every experiment table shows ALL conditions tested (all laps, all seeds, all horizons),
+   with mean and standard deviation, and the number of stints used (N).
+4. Negative or surprising results are stated plainly in the same section as positive ones.
+5. If a metric is dropped for some stints (for example NaN), report how many and why.
+6. The test season (2025) is read exactly once, by src/final_eval.py, at the very end.
+   Any other code that reads the test split is a bug.
+7. No synthetic or random data may be used to produce a reported result. Synthetic data is
+   allowed only inside tests, and test outputs are never quoted as results.
+8. Words not allowed unless literally true: Bayesian, Kalman, temperature scaling,
+   guarantee, proves, causal, measured wear.

@@ -1,7 +1,10 @@
 # Data and cache
 data/
+data/openf1_cache/
+data/raw_excluded/
 fastf1_cache/
 .fastf1_cache/
+logs_*.txt
 
 # Python artifacts
 __pycache__/

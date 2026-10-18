@@ -1,9 +1,16 @@
 paths:
   cache_dir: "fastf1_cache"
+  openf1_cache_dir: "data/openf1_cache"
   raw_dir: "data/raw"
   processed_dir: "data/processed"
   reports_dir: "reports"
   notes_dir: "notes"
+
+data_sources:
+  2022: "fastf1"
+  2023: "openf1"
+  2024: "openf1"
+  2025: "openf1"
 
 seasons:
   train: [2022, 2023]
