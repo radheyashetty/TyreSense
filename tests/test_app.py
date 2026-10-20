@@ -42,3 +42,24 @@ def test_forecast_causality_and_step_render_time():
     assert len(fut_times) == 20
     assert isinstance(rem_life, str)
     assert fig is not None
+
+
+def test_uncertainty_band_hidden_before_lap_3():
+    """Verify uncertainty band is hidden at lap 1 and 2, and rendered at lap 3."""
+    laps, _, curves, global_curve = load_app_data()
+    sample_stint = laps["stint_id"].iloc[0]
+    full_stint = get_stint_subset(laps, sample_stint)
+
+    # Lap 2: band should not be in figure traces
+    obs_lap2 = full_stint[full_stint["stint_lap"] <= 2]
+    fut_laps, fut_times, base_time = forecast_future_laps(obs_lap2, curves, global_curve)
+    fig_lap2 = plot_stint_replay(obs_lap2, fut_laps, fut_times, base_time, curr_lap=2)
+    names_lap2 = [t.name for t in fig_lap2.data if t.name is not None]
+    assert "80% Uncertainty Band" not in names_lap2
+
+    # Lap 3: band should be present in figure traces
+    obs_lap3 = full_stint[full_stint["stint_lap"] <= 3]
+    fut_laps3, fut_times3, base_time3 = forecast_future_laps(obs_lap3, curves, global_curve)
+    fig_lap3 = plot_stint_replay(obs_lap3, fut_laps3, fut_times3, base_time3, curr_lap=3)
+    names_lap3 = [t.name for t in fig_lap3.data if t.name is not None]
+    assert "80% Uncertainty Band" in names_lap3
