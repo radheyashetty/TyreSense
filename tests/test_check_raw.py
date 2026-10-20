@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from src.validate_raw import get_part1_columns, check_race_completeness
-from src.check_raw import inspect_raw_parquet, check_all_raw_parquets
+from checks.check_raw import inspect_raw_parquet, check_all_raw_parquets
 
 
 def make_test_parquet(file_path, null_lt=False, null_deleted=False):

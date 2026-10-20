@@ -97,6 +97,16 @@ def process_cached_race(file_path, year, r_num, e_name, e_date, source, csv_path
     return rec
 
 
+def handle_unknown_track(year, r_num, e_name, e_date, source, csv_path):
+    """Handle unknown track by recording pending status and skipping download."""
+    rec = {"season": year, "round": r_num, "event_name": e_name, "track_id": "", "date": e_date,
+           "status": "unknown_track", "source": source, "laps_rows": 0, "rcm_rows": -1,
+           "deleted_known": False, "isaccurate_known": False, "rcm_note": "unknown track", "error": f"Unknown track '{e_name}'"}
+    record_race_status(csv_path, rec)
+    record_pending_track("reports/tracks_pending.csv", year, r_num, e_name)
+    return rec
+
+
 def process_single_race(event, raw_dir, csv_path, warn_handler, state, source="fastf1", openf1_dir="data/openf1_cache", wait_fn=time.sleep):
     """Handle validation, caching, downloading, and logging for one race round."""
     year = int(event["Year"]) if "Year" in event else int(str(event["EventDate"])[:4])
@@ -106,12 +116,7 @@ def process_single_race(event, raw_dir, csv_path, warn_handler, state, source="f
     try:
         tid = canonical_track_id(e_name)
     except ValueError:
-        rec = {"season": year, "round": r_num, "event_name": e_name, "track_id": "", "date": e_date,
-               "status": "unknown_track", "source": source, "laps_rows": 0, "rcm_rows": -1,
-               "deleted_known": False, "isaccurate_known": False, "rcm_note": "unknown track", "error": f"Unknown track '{e_name}'"}
-        record_race_status(csv_path, rec)
-        record_pending_track("reports/tracks_pending.csv", year, r_num, e_name)
-        return rec
+        return handle_unknown_track(year, r_num, e_name, e_date, source, csv_path)
     file_path = os.path.join(raw_dir, f"race_{year}_{r_num:02d}.parquet")
     if os.path.exists(file_path) and validate_parquet_file(file_path, allow_missing_rcm=True)[0]:
         return process_cached_race(file_path, year, r_num, e_name, e_date, source, csv_path, tid=tid)

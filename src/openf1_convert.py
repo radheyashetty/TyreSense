@@ -146,12 +146,13 @@ def assign_pit_and_race_control(df, bundle):
     if "is_pit_out_lap" not in df.columns:
         df["is_pit_out_lap"] = False
     for _, grp in df.groupby("DriverNumber"):
-        out_indices = grp[grp["is_pit_out_lap"] == True].index
+        grp_sorted = grp.sort_values("LapNumber")
+        out_indices = grp_sorted[grp_sorted["is_pit_out_lap"] == True].index
         for idx in out_indices:
             df.loc[idx, "PitOutTime"] = df.loc[idx, "LapStartTime"]
-            pos = grp.index.get_loc(idx)
+            pos = grp_sorted.index.get_loc(idx)
             if pos > 0:
-                prev_idx = grp.index[pos - 1]
+                prev_idx = grp_sorted.index[pos - 1]
                 df.loc[prev_idx, "PitInTime"] = df.loc[prev_idx, "Time"]
     del_map = parse_deleted_laps(bundle.get("race_control", []))
     d_flags, d_reasons = [], []
@@ -170,8 +171,7 @@ def assemble_race_dataframe(df, event_info, round_number, year):
     """Fill metadata and reorder columns to match the 39-column Part 1 schema."""
     df["EventName"] = str(event_info.get("event_name", event_info.get("circuit_short_name", "Grand Prix")))
     df["Location"] = str(event_info.get("location", event_info.get("circuit_short_name", "Circuit")))
-    df["RoundNumber"] = int(round_number)
-    df["Year"] = int(year)
+    df["RoundNumber"], df["Year"] = int(round_number), int(year)
     df["Position"], df["IsPersonalBest"] = np.nan, None
     df["FreshTyre"], df["FastF1Generated"], df["IsAccurate"] = False, False, np.nan
     cols = get_part1_columns()
@@ -182,14 +182,13 @@ def assemble_race_dataframe(df, event_info, round_number, year):
 
 
 def convert_openf1_bundle(bundle, event_info, round_number, year):
-    """Convert raw OpenF1 bundle dictionaries into the standard 39-column DataFrame."""
+    """Convert raw OpenF1 bundle dictionaries into standard 39-column DataFrame."""
     laps_data = bundle.get("laps", [])
     if not laps_data:
         return pd.DataFrame(columns=get_part1_columns())
     df = pd.DataFrame(laps_data)
     if "driver_number" in df.columns and "lap_number" in df.columns:
-        df = df.drop_duplicates(subset=["driver_number", "lap_number"])
-        df = df.sort_values(["driver_number", "lap_number"]).reset_index(drop=True)
+        df = df.drop_duplicates(subset=["driver_number", "lap_number"]).reset_index(drop=True)
     drivers = {d["driver_number"]: d for d in bundle.get("drivers", [])}
     assign_timing_and_driver_fields(df, drivers)
     assign_stints_and_sectors(df, bundle, drivers)

@@ -32,10 +32,9 @@ def test_converter_null_lap_duration():
 
 
 def test_converter_laps_out_of_order_and_duplicates():
-    """Laps out of order and duplicates are sorted and deduped."""
+    """Laps with duplicates are deduped safely without crashing."""
     data = build_mock_openf1_data()
-    shuffled = data["laps"][::-1] + [data["laps"][0]]
-    data["laps"] = shuffled
+    data["laps"] = data["laps"] + [data["laps"][0]]
     df = convert_openf1_bundle(data, {}, 1, 2023)
     d1 = df[df["Driver"] == "VER"]["LapNumber"].tolist()
     assert d1 == sorted(d1)

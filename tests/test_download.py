@@ -90,7 +90,7 @@ def test_class_a_rcm_unavailable_success(tmp_path, monkeypatch):
     monkeypatch.setattr(fastf1, "get_session", mock_get_sess)
     monkeypatch.setattr("src.validate_raw.probe_rcm_http", mock_probe_401)
     state = {"consecutive_failures": 0, "breaker_waits": 0, "rcm_fault_count": 0}
-    event = {"Year": 2099, "RoundNumber": 10, "EventName": "Bahrain GP", "EventDate": "2099-03-05"}
+    event = {"Year": 2099, "RoundNumber": 10, "EventName": "Bahrain Grand Prix", "EventDate": "2099-03-05"}
     warn_handler = dl.WarningHandler()
     logging.getLogger("fastf1").addHandler(warn_handler)
 
@@ -113,7 +113,7 @@ def test_laps_fail_completely_breaker_incremented(tmp_path, monkeypatch):
 
     monkeypatch.setattr(fastf1, "get_session", mock_get_sess)
     state = {"consecutive_failures": 0, "breaker_waits": 0, "rcm_fault_count": 0}
-    event = {"Year": 2099, "RoundNumber": 11, "EventName": "Empty GP", "EventDate": "2099-03-05"}
+    event = {"Year": 2099, "RoundNumber": 11, "EventName": "Bahrain Grand Prix", "EventDate": "2099-03-05"}
     warn_handler = dl.WarningHandler()
     logging.getLogger("fastf1").addHandler(warn_handler)
 
@@ -146,7 +146,7 @@ def test_repeated_rcm_error_skips_messages_request(tmp_path, monkeypatch):
     logging.getLogger("fastf1").addHandler(warn_handler)
 
     for i in range(1, 5):
-        event = {"Year": 2099, "RoundNumber": 20 + i, "EventName": f"GP {i}", "EventDate": "2099-03-05"}
+        event = {"Year": 2099, "RoundNumber": 20 + i, "EventName": "Bahrain Grand Prix", "EventDate": "2099-03-05"}
         process_single_race(event, raw_dir, csv_path, warn_handler, state, wait_fn=record_wait)
     assert state["rcm_fault_count"] >= 3
     assert sessions[24].load_messages_args[0] is False
@@ -163,7 +163,7 @@ def test_endpoint_name_recorded_in_error_field(tmp_path, monkeypatch):
 
     monkeypatch.setattr(fastf1, "get_session", mock_get_sess)
     state = {"consecutive_failures": 0, "breaker_waits": 0, "rcm_fault_count": 0}
-    event = {"Year": 2099, "RoundNumber": 12, "EventName": "Fail GP", "EventDate": "2099-03-05"}
+    event = {"Year": 2099, "RoundNumber": 12, "EventName": "Bahrain Grand Prix", "EventDate": "2099-03-05"}
     warn_handler = dl.WarningHandler()
     logging.getLogger("fastf1").addHandler(warn_handler)
 
@@ -180,7 +180,7 @@ def test_cached_race_skips_network(tmp_path, monkeypatch):
         return dummy
 
     monkeypatch.setattr(fastf1, "get_session", mock_get_sess)
-    event = {"Year": 2099, "RoundNumber": 13, "EventName": "Good GP", "EventDate": "2099-03-05"}
+    event = {"Year": 2099, "RoundNumber": 13, "EventName": "Bahrain Grand Prix", "EventDate": "2099-03-05"}
     warn_handler = dl.WarningHandler()
     state = {"consecutive_failures": 0, "breaker_waits": 0, "rcm_fault_count": 0}
 
