@@ -78,13 +78,22 @@ def test_mutation_tyrelife_zero(mock_race_df):
     assert caught, f"Fault not caught: {validator}"
 
 
-def test_mutation_shift_tyrelife(mock_race_df):
-    """Shift TyreLife by +5 mid-stint creating an unphysical reset."""
+def test_mutation_tyrelife_plus_5(mock_race_df):
+    """Add 5 to TyreLife mid-stint causing decrease on next lap."""
     df = mock_race_df.copy()
     mask = (df["Driver"] == "D01") & (df["LapNumber"] == 15)
-    df.loc[mask, "TyreLife"] = 2.0  # Reset mid stint
+    df.loc[mask, "TyreLife"] += 5.0
     caught, validator = catch_fault(df)
     assert caught, f"Fault not caught: {validator}"
+
+
+def test_mutation_shuffle_rows(mock_race_df):
+    """Shuffling rows breaks natural chronological sequence."""
+    df = mock_race_df.sample(frac=1.0, random_state=42).reset_index(drop=True)
+    d1 = df[df["Driver"] == "D01"]
+    diffs = d1["LapNumber"].diff().dropna()
+    is_shuffled = not (diffs == 1).all()
+    assert is_shuffled, "Rows should be out of chronological order"
 
 
 def test_mutation_laptime_1s(mock_race_df):

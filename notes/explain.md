@@ -135,27 +135,24 @@
   - Why amendment is sound:
     1. Lap 1 timing discrepancy: 100% of the LapTime discrepancies $> 5\text{ ms}$ occur on standing-start Lap 1 (0.0% match on Lap 1). OpenF1 begins timing Lap 1 from the start-line sensor at lights-out, whereas FastF1/Ergast measures from the finish-line timing transponder. Because `clean.py` permanently filters out standing-start Lap 1 in all downstream pipelines, evaluating LapTime match on flying laps (`LapNumber > 1`) is the scientifically sound metric. On flying laps (`LapNumber > 1`), agreement is exactly 100.0% for both 2023 R1 and 2023 R2 (threshold $\ge 99\%$ PASS).
     2. TyreLife discrepancy: Evaluated over both races combined, TyreLife match is 97.85% (threshold $\ge 95\%$ PASS). Only 3 individual stints differ across both races: OCO Stint 3 (-3 laps), VER Stint 2 (+2 laps), and STR Stint 2 (-1 lap). Inspection reveals VER Stint 2 difference is caused by OpenF1 tracking 2 laps on pre-scrubbed qualifying tyres carried over to the race, which is more faithful to physical tyre age than FastF1 resetting tyre age to 1 at pit exit.
-  - Cross-source results (`reports/cross_source_check.csv`):
-    - LapTime (LapNumber > 1) within 5 ms: 2023 R1 = 100.0% (PASS), 2023 R2 = 100.0% (PASS). (Lap 1 informational share: 0.0%).
-    - TyreLife match: combined = 97.85% (PASS), 2023 R1 = 96.31%, 2023 R2 = 99.58%.
-    - Compound match: 2023 R1 = 100.0% (PASS), 2023 R2 = 100.0% (PASS).
-    - SC/VSC status match: 2023 R1 = 99.91% (PASS), 2023 R2 = 98.73% (PASS).
-- Parquets in `data/raw/` per season:
-  - 2022: 22 parquets (FastF1 cached, 23,577 laps)
-  - 2023: 22 parquets (OpenF1, 24,479 laps; 1 cancelled race R06 Imola)
-  - 2024: 24 parquets (OpenF1, 26,629 laps)
-  - 2025: 23 parquets (OpenF1, 25,706 laps; 1 excluded race R06 Miami moved to data/raw_excluded/)
-  - Total valid raw parquets: 91 parquets (100,391 total laps).
-  - Excluded parquets (`data/raw_excluded/`): 1 parquet (`race_2025_06.parquet`).
+- Cross-source results (`reports/cross_source_check.csv`):
+  - LapTime (LapNumber > 1) within 5 ms: 2023 R1 = 100.0%, 2023 R2 = 100.0% (PASS; Lap 1 info share: 0.0%).
+  - TyreLife match: combined = 97.85% (PASS); Compound match = 100.0% (PASS); SC/VSC match >= 98.7% (PASS).
+- Parquets in `data/raw/`: 2022 (22), 2023 (22), 2024 (24), 2025 (23). Total valid: 91 parquets (100,391 laps); 1 excluded (`race_2025_06.parquet`).
+
+## Task F1 Hardening Confirmation (Date: 2026-10-21)
+- What it does: Confirms environment (Python 3.14 recommended), validates Jolpica telemetry match at <= 5.0 ms (99.9775% over 97,887 flying laps), verifies 25 circuit lengths against Formula1.com & Wikipedia, executes 13 mutation tests, and re-verifies 92 parquet SHA-256 hashes.
+- Why: Rigorously proves raw telemetry data layer integrity, multi-source agreement, and invariant error detection before starting F2/F3.
+- What breaks: Undetected missing laps or changed circuit lengths would distort track-scaled fuel corrections and tyre degradation curves.
 
 ### To do in F3
-The downstream pipeline in F3 must implement the following data-source adjustments:
-(a) `clean.py` must treat `IsAccurate = NaN` as unknown (retained), not `False`, for OpenF1 races (2023-2025), preserving genuine flying laps since OpenF1 lacks the FastF1 heuristic accuracy flag;
-(b) build stint boundaries directly from tyre-age resets and pit-out laps, rather than relying on OpenF1's upstream `Stint` field, ensuring consistent stint definitions across sources;
-(c) drop a whole race if any lap has `INTERMEDIATE` or `WET` compound, avoiding wet-weather outliers and non-representative pace degradation;
+The downstream pipeline in F3 must implement:
+(a) treat `IsAccurate = NaN` as unknown (retained) for OpenF1 races;
+(b) build stint boundaries from tyre-age resets and pit-out laps;
+(c) drop a whole race if any lap has `INTERMEDIATE` or `WET` compound;
 (d) handle races where `deleted_known` is `False` safely without dropping all laps;
-(e) account for documented cross-source TyreLife differences (specifically pre-scrubbed tyres in OpenF1 vs FastF1's fresh-tyre assumption);
-(f) handle source differences between 2022 (downloaded from FastF1) and 2023-2025 (downloaded from OpenF1).
+(e) account for documented cross-source TyreLife differences (pre-scrubbed tyres in OpenF1);
+(f) handle source differences between 2022 (FastF1) and 2023-2025 (OpenF1).
 
 ---
 

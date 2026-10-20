@@ -137,7 +137,7 @@ def evaluate_metrics(race_id, season, round_num, raw_df, driver_map, expected_la
         if key in ref_laps and pd.notna(row["LapTime"]):
             total_cmp += 1
             raw_sec = row["LapTime"].total_seconds()
-            if abs(raw_sec - ref_laps[key]) <= 0.0051:
+            if abs(raw_sec - ref_laps[key]) <= 0.0050:
                 match_lt += 1
     lt_share = (match_lt / total_cmp) if total_cmp > 0 else 0.0
     pit_share = evaluate_pitstops(season, round_num, raw_df, driver_map)

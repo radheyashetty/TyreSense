@@ -46,13 +46,11 @@ def test_lap_time_range_when_present():
 
 def test_compound_valid_values():
     """Verify Compound contains only valid Pirelli compounds."""
-    # FastF1 2022 raw data has known 'None' string for missing compound; listed in BUGS.md
     failed = []
     for p in RAW_PARQUETS:
         ok, _ = check_compounds_valid(pd.read_parquet(p))
         if not ok:
             failed.append(os.path.basename(p).replace(".parquet", ""))
-    # Document known upstream FastF1 missing compound races (Monaco and Austria 2022)
     known_upstream_missing = ["race_2022_07", "race_2022_11"]
     unexplained = [f for f in failed if f not in known_upstream_missing]
     assert not unexplained, f"Unexpected invalid compounds in: {unexplained}"

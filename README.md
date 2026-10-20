@@ -48,7 +48,8 @@ Modern F1 race outcomes hinge on pit-stop strategy: determining when a tyre's pa
 
 ## 🚀 Quickstart
 
-### 1. Installation
+### 1. Installation & Environment
+Recommended runtime: **Python 3.14.3** (`py -3.14` or system `python.exe`), which produced and verified all raw telemetry datasets. Python 3.10 is also supported for test execution.
 Clone the repository and install the dependencies:
 ```bash
 git clone https://github.com/radheyashetty/TyreSense.git

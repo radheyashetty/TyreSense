@@ -9,9 +9,9 @@ tracks:
     name: Circuit of the Americas
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 9
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/united-states/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   baku:
     aliases:
     - Baku
@@ -22,9 +22,9 @@ tracks:
     name: Baku City Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 144
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/azerbaijan/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   barcelona:
     aliases:
     - Catalunya
@@ -38,9 +38,9 @@ tracks:
     name: Circuit de Barcelona-Catalunya
     notes: Layout modified in 2023 removing chicane
     openf1_circuit_key: 15
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/spain/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   hungaroring:
     aliases:
     - Hungaroring
@@ -52,9 +52,9 @@ tracks:
     name: Hungaroring
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 4
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/hungary/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   imola:
     aliases:
     - Imola
@@ -65,9 +65,9 @@ tracks:
     name: Autodromo Enzo e Dino Ferrari
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 6
-    source: https://www.formula1.com/en/racing/2024/emilia-romagna/circuit
+    source: https://www.formula1.com/en/racing/2024/emiliaromagna/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   interlagos:
     aliases:
     - Interlagos
@@ -81,9 +81,9 @@ tracks:
     name: "Aut\xF3dromo Jos\xE9 Carlos Pace"
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 14
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/brazil/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   jeddah:
     aliases:
     - Jeddah
@@ -94,9 +94,9 @@ tracks:
     name: Jeddah Corniche Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 149
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/saudi-arabia/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   las_vegas:
     aliases:
     - Las Vegas
@@ -106,9 +106,9 @@ tracks:
     name: Las Vegas Strip Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 152
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/las-vegas/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   lusail:
     aliases:
     - Lusail
@@ -120,9 +120,9 @@ tracks:
     name: Lusail International Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 150
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/qatar/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   melbourne:
     aliases:
     - Melbourne
@@ -133,9 +133,9 @@ tracks:
     name: Albert Park Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 10
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/australia/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   mexico_city:
     aliases:
     - Mexico City
@@ -146,9 +146,9 @@ tracks:
     name: "Aut\xF3dromo Hermanos Rodr\xEDguez"
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 65
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/mexico/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   miami:
     aliases:
     - Miami
@@ -158,9 +158,9 @@ tracks:
     name: Miami International Autodrome
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 151
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/miami/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   monaco:
     aliases:
     - Monaco
@@ -171,9 +171,9 @@ tracks:
     name: Circuit de Monaco
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 22
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/monaco/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   montreal:
     aliases:
     - Montreal
@@ -185,9 +185,9 @@ tracks:
     name: Circuit Gilles-Villeneuve
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 23
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/canada/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   monza:
     aliases:
     - Monza
@@ -197,9 +197,9 @@ tracks:
     name: Autodromo Nazionale Monza
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 39
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/italy/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   paul_ricard:
     aliases:
     - Le Castellet
@@ -213,7 +213,7 @@ tracks:
     openf1_circuit_key: null
     source: https://www.formula1.com/en/racing/2022/france/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   sakhir:
     aliases:
     - Sakhir
@@ -224,9 +224,9 @@ tracks:
     name: Bahrain International Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 63
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/bahrain/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   shanghai:
     aliases:
     - Shanghai
@@ -239,7 +239,7 @@ tracks:
     openf1_circuit_key: 49
     source: https://www.formula1.com/en/racing/2024/china/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   silverstone:
     aliases:
     - Silverstone
@@ -250,9 +250,9 @@ tracks:
     name: Silverstone Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 2
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/great-britain/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   singapore:
     aliases:
     - Singapore
@@ -265,9 +265,9 @@ tracks:
     name: Marina Bay Street Circuit
     notes: Layout modified in 2023 removing turns 16-19
     openf1_circuit_key: 61
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/singapore/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   spa:
     aliases:
     - Spa-Francorchamps
@@ -279,9 +279,9 @@ tracks:
     name: Circuit de Spa-Francorchamps
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 7
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/belgium/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   spielberg:
     aliases:
     - Spielberg
@@ -292,9 +292,9 @@ tracks:
     name: Red Bull Ring
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 19
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/austria/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   suzuka:
     aliases:
     - Suzuka
@@ -305,9 +305,9 @@ tracks:
     name: Suzuka International Racing Course
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 46
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/japan/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   yas_marina:
     aliases:
     - Yas Marina Circuit
@@ -319,9 +319,9 @@ tracks:
     name: Yas Marina Circuit
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 70
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/united-arab-emirates/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
   zandvoort:
     aliases:
     - Zandvoort
@@ -332,6 +332,6 @@ tracks:
     name: Circuit Zandvoort
     notes: Official FIA Grand Prix circuit length
     openf1_circuit_key: 55
-    source: https://www.fia.com
+    source: https://www.formula1.com/en/racing/2024/netherlands/circuit
     verified: true
-    verified_on: '2026-10-20'
+    verified_on: '2026-10-21'
