@@ -3,6 +3,7 @@ import time
 import json
 import requests
 import pandas as pd
+from src.tracks import canonical_track_id
 
 CACHE_DIR = "data/jolpica_cache"
 BASE_URL = "https://api.jolpi.ca/ergast/f1"
@@ -13,9 +14,7 @@ def fetch_jolpica_json(endpoint, params=None):
     """Fetch JSON from Jolpica API with caching, rate limits, and 429 backoff."""
     os.makedirs(CACHE_DIR, exist_ok=True)
     slug = endpoint.strip("/").replace("/", "_")
-    p_str = ""
-    if params:
-        p_str = "_" + "_".join(f"{k}={v}" for k, v in sorted(params.items()))
+    p_str = "_" + "_".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
     cache_path = os.path.join(CACHE_DIR, f"{slug}{p_str}.json")
     if os.path.exists(cache_path):
         with open(cache_path, "r", encoding="utf-8") as f:
@@ -31,9 +30,7 @@ def fetch_jolpica_json(endpoint, params=None):
                     json.dump(data, f)
                 return data
             if r.status_code == 429:
-                print(f"HTTP 429 rate limit on {url}, sleeping 60s (attempt {attempt + 1}/5)")
-                time.sleep(60)
-                continue
+                time.sleep(60); continue
             if r.status_code == 404:
                 return None
         except Exception as e:
@@ -44,20 +41,15 @@ def fetch_jolpica_json(endpoint, params=None):
 
 def fetch_all_race_laps(season, round_num):
     """Fetch all lap timings for a race across paginated responses."""
-    offset = 0
-    limit = 100
-    all_laps = []
+    offset, limit, all_laps = 0, 100, []
     while True:
         data = fetch_jolpica_json(f"{season}/{round_num}/laps.json", {"limit": limit, "offset": offset})
         if not data:
             break
         races = data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
-        if not races:
+        if not races or not races[0].get("Laps", []):
             break
-        laps_page = races[0].get("Laps", [])
-        if not laps_page:
-            break
-        all_laps.extend(laps_page)
+        all_laps.extend(races[0].get("Laps", []))
         total = int(data.get("MRData", {}).get("total", 0))
         offset += limit
         if offset >= total:
@@ -71,9 +63,7 @@ def fetch_race_pitstops(season, round_num):
     if not data:
         return []
     races = data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
-    if not races:
-        return []
-    return races[0].get("PitStops", [])
+    return races[0].get("PitStops", []) if races else []
 
 
 def fetch_race_results(season, round_num):
@@ -82,9 +72,7 @@ def fetch_race_results(season, round_num):
     if not data:
         return []
     races = data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
-    if not races:
-        return []
-    return races[0].get("Results", [])
+    return races[0].get("Results", []) if races else []
 
 
 def parse_time_seconds(time_str):
@@ -93,11 +81,26 @@ def parse_time_seconds(time_str):
         return None
     try:
         if ":" in time_str:
-            parts = time_str.split(":")
-            return float(parts[0]) * 60.0 + float(parts[1])
+            p = time_str.split(":")
+            return float(p[0]) * 60.0 + float(p[1])
         return float(time_str)
     except ValueError:
         return None
+
+
+def get_jolpica_schedule(season):
+    """Fetch Jolpica schedule and map canonical track_id to Ergast round number."""
+    data = fetch_jolpica_json(f"{season}.json", {"limit": 100})
+    if not data:
+        return {}
+    races = data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
+    mapping = {}
+    for r in races:
+        try:
+            mapping[canonical_track_id(r.get("raceName", ""))] = int(r.get("round", 0))
+        except ValueError:
+            pass
+    return mapping
 
 
 def compare_race(race_id, season, round_num):
@@ -108,15 +111,8 @@ def compare_race(race_id, season, round_num):
     results = fetch_race_results(season, round_num)
     if not results:
         return {"race_id": race_id, "laps_compared": 0, "laptime_match_share": 0.0, "pit_lap_match_share": 0.0, "driver_laps_match": 0.0, "note": "no reference"}
-    driver_map = {}
-    expected_laps = {}
-    for r in results:
-        code = r.get("Driver", {}).get("code")
-        did = r.get("Driver", {}).get("driverId")
-        if code and did:
-            driver_map[did] = code
-        if code:
-            expected_laps[code] = int(r.get("laps", 0))
+    driver_map = {r.get("Driver", {}).get("driverId"): r.get("Driver", {}).get("code") for r in results if r.get("Driver", {}).get("code") and r.get("Driver", {}).get("driverId")}
+    expected_laps = {r.get("Driver", {}).get("code"): int(r.get("laps", 0)) for r in results if r.get("Driver", {}).get("code")}
     raw_df = pd.read_parquet(raw_path)
     return evaluate_metrics(race_id, season, round_num, raw_df, driver_map, expected_laps)
 
@@ -130,8 +126,7 @@ def evaluate_metrics(race_id, season, round_num, raw_df, driver_map, expected_la
     for lap in all_laps:
         lnum = int(lap.get("number", 0))
         for timing in lap.get("Timings", []):
-            did = timing.get("driverId")
-            code = driver_map.get(did)
+            code = driver_map.get(timing.get("driverId"))
             sec = parse_time_seconds(timing.get("time"))
             if code and sec is not None:
                 ref_laps[(code, lnum)] = sec
@@ -153,15 +148,8 @@ def evaluate_metrics(race_id, season, round_num, raw_df, driver_map, expected_la
 def evaluate_pitstops(season, round_num, raw_df, driver_map):
     """Compute pit stop match share between raw data and Jolpica."""
     pitstops = fetch_race_pitstops(season, round_num)
-    ref_pits = set()
-    for ps in pitstops:
-        code = driver_map.get(ps.get("driverId"))
-        if code:
-            ref_pits.add((code, int(ps.get("lap", 0))))
-    raw_pits = set()
-    in_laps = raw_df[raw_df["PitInTime"].notna()]
-    for _, r in in_laps.iterrows():
-        raw_pits.add((r["Driver"], int(r["LapNumber"])))
+    ref_pits = {(driver_map.get(ps.get("driverId")), int(ps.get("lap", 0))) for ps in pitstops if driver_map.get(ps.get("driverId"))}
+    raw_pits = {(r["Driver"], int(r["LapNumber"])) for _, r in raw_df[raw_df["PitInTime"].notna()].iterrows()}
     if not ref_pits and not raw_pits:
         return 1.0
     common = len(ref_pits.intersection(raw_pits))
@@ -171,13 +159,11 @@ def evaluate_pitstops(season, round_num, raw_df, driver_map):
 
 def evaluate_driver_laps(raw_df, expected_laps):
     """Check driver completed lap count against official classification."""
-    matches = 0
-    checked = 0
+    matches, checked = 0, 0
     for drv, g in raw_df.groupby("Driver"):
         if drv in expected_laps:
             checked += 1
-            max_lap = int(g["LapNumber"].max())
-            if max_lap == expected_laps[drv]:
+            if int(g["LapNumber"].max()) == expected_laps[drv]:
                 matches += 1
     return matches / checked if checked > 0 else 1.0
 
@@ -187,13 +173,15 @@ def run_all_third_source_checks():
     os.makedirs("reports/testing", exist_ok=True)
     df_races = pd.read_csv("reports/races.csv")
     valid_races = df_races[df_races["status"].isin(["downloaded", "cached"])]
+    schedules = {yr: get_jolpica_schedule(yr) for yr in [2022, 2023, 2024, 2025]}
     records = []
-    print(f"Starting Jolpica third-source check on {len(valid_races)} valid races...", flush=True)
+    print(f"Starting Jolpica check on {len(valid_races)} valid races...", flush=True)
     for idx, (_, row) in enumerate(valid_races.iterrows()):
-        yr = int(row["season"])
-        rnd = int(row["round"])
+        yr, rnd = int(row["season"]), int(row["round"])
         rid = f"race_{yr}_{rnd:02d}"
-        res = compare_race(rid, yr, rnd)
+        tid = row.get("track_id") if pd.notna(row.get("track_id")) else canonical_track_id(row["event_name"])
+        j_rnd = schedules.get(yr, {}).get(tid)
+        res = compare_race(rid, yr, j_rnd) if j_rnd else {"race_id": rid, "laps_compared": 0, "laptime_match_share": 0.0, "pit_lap_match_share": 0.0, "driver_laps_match": 0.0, "note": "not in reference schedule"}
         records.append(res)
         print(f"[{idx+1}/{len(valid_races)}] {rid}: cmp={res['laps_compared']}, lt={res['laptime_match_share']}, pit={res['pit_lap_match_share']}, note={res['note']}", flush=True)
         pd.DataFrame(records).to_csv("reports/testing/third_source.csv", index=False)

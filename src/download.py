@@ -11,6 +11,7 @@ from src.validate_raw import (
     get_past_race_schedule, fetch_and_validate
 )
 from src.openf1_source import get_openf1_past_schedule, process_openf1_race
+from src.tracks import canonical_track_id
 
 
 def load_config(config_path="config.yaml"):
@@ -25,9 +26,21 @@ def enable_f1_cache(cache_dir="fastf1_cache"):
     fastf1.Cache.enable_cache(cache_dir)
 
 
+def record_pending_track(pending_csv, year, round_num, event_name):
+    """Record unknown circuit into reports/tracks_pending.csv."""
+    os.makedirs(os.path.dirname(pending_csv) or ".", exist_ok=True)
+    row = pd.DataFrame([{"season": year, "round": round_num, "event_name": event_name}])
+    if os.path.exists(pending_csv):
+        df = pd.read_csv(pending_csv)
+        if not ((df["season"] == year) & (df["round"] == round_num)).any():
+            pd.concat([df, row], ignore_index=True).to_csv(pending_csv, index=False)
+    else:
+        row.to_csv(pending_csv, index=False)
+
+
 def record_race_status(csv_path, record):
     """Update reports/races.csv, migrating old layouts and preserving rows."""
-    cols = ["season", "round", "event_name", "date", "status", "source",
+    cols = ["season", "round", "event_name", "track_id", "date", "status", "source",
             "laps_rows", "rcm_rows", "deleted_known", "isaccurate_known", "rcm_note", "error"]
     dir_name = os.path.dirname(csv_path)
     if dir_name:
@@ -71,14 +84,15 @@ def fetch_race_with_retry(year, round_num, raw_dir, warn_handler, state, wait_fn
             wait_fn(30)
 
 
-def process_cached_race(file_path, year, r_num, e_name, e_date, source, csv_path):
+def process_cached_race(file_path, year, r_num, e_name, e_date, source, csv_path, tid=""):
     """Handle status reporting for previously downloaded valid parquet file."""
     laps_df = pd.read_parquet(file_path)
     del_k = not laps_df["Deleted"].isna().all()
     acc_k = source == "fastf1" and not laps_df["IsAccurate"].isna().all()
-    rec = {"season": year, "round": r_num, "event_name": e_name, "date": e_date,
-           "status": "cached", "source": source, "laps_rows": len(laps_df), "rcm_rows": -1,
-           "deleted_known": del_k, "isaccurate_known": acc_k, "rcm_note": "cached parquet", "error": ""}
+    rec = {"season": year, "round": r_num, "event_name": e_name, "track_id": tid,
+           "date": e_date, "status": "cached", "source": source, "laps_rows": len(laps_df),
+           "rcm_rows": -1, "deleted_known": del_k, "isaccurate_known": acc_k,
+           "rcm_note": "cached parquet", "error": ""}
     record_race_status(csv_path, rec)
     return rec
 
@@ -89,11 +103,21 @@ def process_single_race(event, raw_dir, csv_path, warn_handler, state, source="f
     r_num = int(event["RoundNumber"])
     e_name = str(event.get("EventName", event.get("circuit_short_name", "Grand Prix")))
     e_date = str(event.get("EventDate", str(event.get("date_start", ""))[:10]))
+    try:
+        tid = canonical_track_id(e_name)
+    except ValueError:
+        rec = {"season": year, "round": r_num, "event_name": e_name, "track_id": "", "date": e_date,
+               "status": "unknown_track", "source": source, "laps_rows": 0, "rcm_rows": -1,
+               "deleted_known": False, "isaccurate_known": False, "rcm_note": "unknown track", "error": f"Unknown track '{e_name}'"}
+        record_race_status(csv_path, rec)
+        record_pending_track("reports/tracks_pending.csv", year, r_num, e_name)
+        return rec
     file_path = os.path.join(raw_dir, f"race_{year}_{r_num:02d}.parquet")
     if os.path.exists(file_path) and validate_parquet_file(file_path, allow_missing_rcm=True)[0]:
-        return process_cached_race(file_path, year, r_num, e_name, e_date, source, csv_path)
+        return process_cached_race(file_path, year, r_num, e_name, e_date, source, csv_path, tid=tid)
     if source == "openf1":
         rec = process_openf1_race(event, raw_dir, openf1_dir, wait_fn=wait_fn)
+        rec["track_id"] = tid
         record_race_status(csv_path, rec)
         return rec
     data, rcm_cnt, del_k, note, status, err = fetch_race_with_retry(year, r_num, raw_dir, warn_handler, state, wait_fn)
@@ -102,7 +126,7 @@ def process_single_race(event, raw_dir, csv_path, warn_handler, state, source="f
         os.makedirs(raw_dir, exist_ok=True)
         data.to_parquet(file_path, index=False)
         status = "downloaded"
-    rec = {"season": year, "round": r_num, "event_name": e_name, "date": e_date,
+    rec = {"season": year, "round": r_num, "event_name": e_name, "track_id": tid, "date": e_date,
            "status": status, "source": "fastf1", "laps_rows": laps, "rcm_rows": rcm_cnt,
            "deleted_known": del_k, "isaccurate_known": True, "rcm_note": note, "error": err}
     record_race_status(csv_path, rec)
@@ -135,10 +159,7 @@ def run_download_loop(years, raw_dir, csv_path, config, wait_fn=time.sleep):
     for y in years:
         src = sources.get(y, sources.get(str(y), "fastf1"))
         schedule = get_openf1_past_schedule(y, of1_dir, wait_fn) if src == "openf1" else get_past_race_schedule(y)
-        if isinstance(schedule, pd.DataFrame):
-            events = [row.to_dict() for _, row in schedule.iterrows()]
-        else:
-            events = schedule
+        events = [r.to_dict() for _, r in schedule.iterrows()] if isinstance(schedule, pd.DataFrame) else schedule
         for event in events:
             rec = process_single_race(event, raw_dir, csv_path, warn_handler, state, src, of1_dir, wait_fn)
             msg = f"[{rec['season']} R{rec['round']:02d} {rec['event_name']}] {rec['status']} ({rec['laps_rows']} laps, {rec['source']})"

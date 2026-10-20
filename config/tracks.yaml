@@ -1,0 +1,337 @@
+tracks:
+  austin:
+    aliases:
+    - Austin
+    - United States Grand Prix
+    - COTA
+    country: USA
+    length_km: 5.513
+    name: Circuit of the Americas
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 9
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  baku:
+    aliases:
+    - Baku
+    - Azerbaijan Grand Prix
+    - Azerbaijan
+    country: Azerbaijan
+    length_km: 6.003
+    name: Baku City Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 144
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  barcelona:
+    aliases:
+    - Catalunya
+    - Spanish Grand Prix
+    - Barcelona
+    - Spain
+    country: Spain
+    length_km: 4.657
+    length_km_by_season:
+      2022: 4.675
+    name: Circuit de Barcelona-Catalunya
+    notes: Layout modified in 2023 removing chicane
+    openf1_circuit_key: 15
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  hungaroring:
+    aliases:
+    - Hungaroring
+    - Hungarian Grand Prix
+    - Budapest
+    - Hungary
+    country: Hungary
+    length_km: 4.381
+    name: Hungaroring
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 4
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  imola:
+    aliases:
+    - Imola
+    - Emilia Romagna Grand Prix
+    - Emilia-Romagna
+    country: Italy
+    length_km: 4.909
+    name: Autodromo Enzo e Dino Ferrari
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 6
+    source: https://www.formula1.com/en/racing/2024/emilia-romagna/circuit
+    verified: true
+    verified_on: '2026-10-20'
+  interlagos:
+    aliases:
+    - Interlagos
+    - "S\xE3o Paulo Grand Prix"
+    - Sao Paulo
+    - So Paulo Grand Prix
+    - So Paulo
+    - Brazil
+    country: Brazil
+    length_km: 4.309
+    name: "Aut\xF3dromo Jos\xE9 Carlos Pace"
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 14
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  jeddah:
+    aliases:
+    - Jeddah
+    - Saudi Arabian Grand Prix
+    - Saudi Arabia
+    country: Saudi Arabia
+    length_km: 6.174
+    name: Jeddah Corniche Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 149
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  las_vegas:
+    aliases:
+    - Las Vegas
+    - Las Vegas Grand Prix
+    country: USA
+    length_km: 6.201
+    name: Las Vegas Strip Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 152
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  lusail:
+    aliases:
+    - Lusail
+    - Qatar Grand Prix
+    - Qatar
+    - Losail
+    country: Qatar
+    length_km: 5.419
+    name: Lusail International Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 150
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  melbourne:
+    aliases:
+    - Melbourne
+    - Australian Grand Prix
+    - Australia
+    country: Australia
+    length_km: 5.278
+    name: Albert Park Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 10
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  mexico_city:
+    aliases:
+    - Mexico City
+    - Mexico City Grand Prix
+    - Mexico
+    country: Mexico
+    length_km: 4.304
+    name: "Aut\xF3dromo Hermanos Rodr\xEDguez"
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 65
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  miami:
+    aliases:
+    - Miami
+    - Miami Grand Prix
+    country: USA
+    length_km: 5.412
+    name: Miami International Autodrome
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 151
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  monaco:
+    aliases:
+    - Monaco
+    - Monaco Grand Prix
+    - Monte Carlo
+    country: Monaco
+    length_km: 3.337
+    name: Circuit de Monaco
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 22
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  montreal:
+    aliases:
+    - Montreal
+    - Canadian Grand Prix
+    - "Montr\xE9al"
+    - Canada
+    country: Canada
+    length_km: 4.361
+    name: Circuit Gilles-Villeneuve
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 23
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  monza:
+    aliases:
+    - Monza
+    - Italian Grand Prix
+    country: Italy
+    length_km: 5.793
+    name: Autodromo Nazionale Monza
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 39
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  paul_ricard:
+    aliases:
+    - Le Castellet
+    - French Grand Prix
+    - Paul Ricard
+    - France
+    country: France
+    length_km: 5.842
+    name: Circuit Paul Ricard
+    notes: Official FIA Grand Prix circuit length (seen in 2022 only)
+    openf1_circuit_key: null
+    source: https://www.formula1.com/en/racing/2022/france/circuit
+    verified: true
+    verified_on: '2026-10-20'
+  sakhir:
+    aliases:
+    - Sakhir
+    - Bahrain Grand Prix
+    - Bahrain
+    country: Bahrain
+    length_km: 5.412
+    name: Bahrain International Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 63
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  shanghai:
+    aliases:
+    - Shanghai
+    - Chinese Grand Prix
+    - China
+    country: China
+    length_km: 5.451
+    name: Shanghai International Circuit
+    notes: Official FIA Grand Prix circuit length (seen in 2024-2025 only)
+    openf1_circuit_key: 49
+    source: https://www.formula1.com/en/racing/2024/china/circuit
+    verified: true
+    verified_on: '2026-10-20'
+  silverstone:
+    aliases:
+    - Silverstone
+    - British Grand Prix
+    - Great Britain
+    country: Great Britain
+    length_km: 5.891
+    name: Silverstone Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 2
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  singapore:
+    aliases:
+    - Singapore
+    - Singapore Grand Prix
+    - Marina Bay
+    country: Singapore
+    length_km: 4.94
+    length_km_by_season:
+      2022: 5.063
+    name: Marina Bay Street Circuit
+    notes: Layout modified in 2023 removing turns 16-19
+    openf1_circuit_key: 61
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  spa:
+    aliases:
+    - Spa-Francorchamps
+    - Belgian Grand Prix
+    - Spa
+    - Belgium
+    country: Belgium
+    length_km: 7.004
+    name: Circuit de Spa-Francorchamps
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 7
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  spielberg:
+    aliases:
+    - Spielberg
+    - Austrian Grand Prix
+    - Austria
+    country: Austria
+    length_km: 4.318
+    name: Red Bull Ring
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 19
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  suzuka:
+    aliases:
+    - Suzuka
+    - Japanese Grand Prix
+    - Japan
+    country: Japan
+    length_km: 5.807
+    name: Suzuka International Racing Course
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 46
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  yas_marina:
+    aliases:
+    - Yas Marina Circuit
+    - Abu Dhabi Grand Prix
+    - Yas Island
+    - Abu Dhabi
+    country: UAE
+    length_km: 5.281
+    name: Yas Marina Circuit
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 70
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'
+  zandvoort:
+    aliases:
+    - Zandvoort
+    - Dutch Grand Prix
+    - Netherlands
+    country: Netherlands
+    length_km: 4.259
+    name: Circuit Zandvoort
+    notes: Official FIA Grand Prix circuit length
+    openf1_circuit_key: 55
+    source: https://www.fia.com
+    verified: true
+    verified_on: '2026-10-20'

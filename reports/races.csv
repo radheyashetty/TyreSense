@@ -1,94 +1,94 @@
-season,round,event_name,date,status,source,laps_rows,rcm_rows,deleted_known,isaccurate_known,rcm_note,error
-2022,1,Bahrain Grand Prix,2022-03-20 00:00:00,cached,fastf1,1125,-1,True,True,cached parquet,
-2022,2,Saudi Arabian Grand Prix,2022-03-27 00:00:00,cached,fastf1,820,-1,True,True,cached parquet,
-2022,3,Australian Grand Prix,2022-04-10 00:00:00,cached,fastf1,1045,-1,True,True,cached parquet,
-2022,4,Emilia Romagna Grand Prix,2022-04-24 00:00:00,cached,fastf1,1132,-1,True,True,cached parquet,
-2022,5,Miami Grand Prix,2022-05-08 00:00:00,cached,fastf1,1057,-1,True,True,cached parquet,
-2022,6,Spanish Grand Prix,2022-05-22 00:00:00,cached,fastf1,1230,-1,True,True,cached parquet,
-2022,7,Monaco Grand Prix,2022-05-29 00:00:00,cached,fastf1,1179,-1,True,True,cached parquet,
-2022,8,Azerbaijan Grand Prix,2022-06-12 00:00:00,cached,fastf1,891,-1,True,True,cached parquet,
-2022,9,Canadian Grand Prix,2022-06-19 00:00:00,cached,fastf1,1264,-1,True,True,cached parquet,
-2022,10,British Grand Prix,2022-07-03 00:00:00,cached,fastf1,815,-1,True,True,cached parquet,
-2022,11,Austrian Grand Prix,2022-07-10 00:00:00,cached,fastf1,1324,-1,True,True,cached parquet,
-2022,12,French Grand Prix,2022-07-24 00:00:00,cached,fastf1,958,-1,True,True,cached parquet,
-2022,13,Hungarian Grand Prix,2022-07-31 00:00:00,cached,fastf1,1383,-1,True,True,cached parquet,
-2022,14,Belgian Grand Prix,2022-08-28 00:00:00,cached,fastf1,792,-1,True,True,cached parquet,
-2022,15,Dutch Grand Prix,2022-09-04 00:00:00,cached,fastf1,1392,-1,True,True,cached parquet,
-2022,16,Italian Grand Prix,2022-09-11 00:00:00,cached,fastf1,971,-1,True,True,cached parquet,
-2022,17,Singapore Grand Prix,2022-10-02 00:00:00,cached,fastf1,945,-1,True,True,cached parquet,
-2022,18,Japanese Grand Prix,2022-10-09 00:00:00,cached,fastf1,507,-1,True,True,cached parquet,
-2022,19,United States Grand Prix,2022-10-23 00:00:00,cached,fastf1,992,-1,True,True,cached parquet,
-2022,20,Mexico City Grand Prix,2022-10-30 00:00:00,cached,fastf1,1379,-1,True,True,cached parquet,
-2022,21,São Paulo Grand Prix,2022-11-13 00:00:00,cached,fastf1,1259,-1,True,True,cached parquet,
-2022,22,Abu Dhabi Grand Prix,2022-11-20 00:00:00,cached,fastf1,1117,-1,True,True,cached parquet,
-2023,1,Sakhir,2023-03-05,cached,openf1,1058,-1,True,False,cached parquet,
-2023,2,Jeddah,2023-03-19,cached,openf1,945,-1,True,False,cached parquet,
-2023,3,Melbourne,2023-04-02,cached,openf1,1006,-1,True,False,cached parquet,
-2023,4,Baku,2023-04-30,cached,openf1,963,-1,True,False,cached parquet,
-2023,5,Miami,2023-05-07,cached,openf1,1139,-1,True,False,cached parquet,
-2023,6,Imola,2023-05-21,cancelled,openf1,0,0,False,False,openf1 validation failed,cancelled by organisers (heavy flooding in Emilia-Romagna)
-2023,7,Monte Carlo,2023-05-28,downloaded,openf1,1516,244,True,False,openf1 (244 rcm rows),
-2023,8,Catalunya,2023-06-04,downloaded,openf1,1312,49,True,False,openf1 (49 rcm rows),
-2023,9,Montreal,2023-06-18,downloaded,openf1,1318,77,True,False,openf1 (77 rcm rows),
-2023,10,Spielberg,2023-07-02,downloaded,openf1,1355,212,True,False,openf1 (212 rcm rows),
-2023,11,Silverstone,2023-07-09,downloaded,openf1,974,46,True,False,openf1 (46 rcm rows),
-2023,12,Hungaroring,2023-07-23,downloaded,openf1,1255,87,True,False,openf1 (87 rcm rows),
-2023,13,Spa-Francorchamps,2023-07-30,downloaded,openf1,817,56,True,False,openf1 (56 rcm rows),
-2023,14,Zandvoort,2023-08-27,downloaded,openf1,1344,78,True,False,openf1 (78 rcm rows),
-2023,15,Monza,2023-09-03,downloaded,openf1,968,45,True,False,openf1 (45 rcm rows),
-2023,16,Singapore,2023-09-17,downloaded,openf1,1091,76,True,False,openf1 (76 rcm rows),
-2023,17,Suzuka,2023-09-24,downloaded,openf1,886,73,True,False,openf1 (73 rcm rows),
-2023,18,Lusail,2023-10-08,downloaded,openf1,1009,137,True,False,openf1 (137 rcm rows),
-2023,19,Austin,2023-10-22,downloaded,openf1,1017,81,True,False,openf1 (81 rcm rows),
-2023,20,Mexico City,2023-10-29,downloaded,openf1,1286,100,True,False,openf1 (100 rcm rows),
-2023,21,Interlagos,2023-11-05,downloaded,openf1,1112,55,True,False,openf1 (55 rcm rows),
-2023,22,Las Vegas,2023-11-19,downloaded,openf1,949,75,True,False,openf1 (75 rcm rows),
-2023,23,Yas Marina Circuit,2023-11-26,downloaded,openf1,1159,67,True,False,openf1 (67 rcm rows),
-2024,1,Sakhir,2024-03-02,downloaded,openf1,1129,71,True,False,openf1 (71 rcm rows),
-2024,2,Jeddah,2024-03-09,downloaded,openf1,902,68,True,False,openf1 (68 rcm rows),
-2024,3,Melbourne,2024-03-24,downloaded,openf1,998,84,True,False,openf1 (84 rcm rows),
-2024,4,Suzuka,2024-04-07,downloaded,openf1,908,70,True,False,openf1 (70 rcm rows),
-2024,5,Shanghai,2024-04-21,downloaded,openf1,1033,58,True,False,openf1 (58 rcm rows),
-2024,6,Miami,2024-05-05,downloaded,openf1,1112,77,True,False,openf1 (77 rcm rows),
-2024,7,Imola,2024-05-19,downloaded,openf1,1239,100,True,False,openf1 (100 rcm rows),
-2024,8,Monte Carlo,2024-05-26,downloaded,openf1,1237,122,True,False,openf1 (122 rcm rows),
-2024,9,Montreal,2024-06-09,downloaded,openf1,1272,130,True,False,openf1 (130 rcm rows),
-2024,10,Catalunya,2024-06-23,downloaded,openf1,1310,107,True,False,openf1 (107 rcm rows),
-2024,11,Spielberg,2024-06-30,downloaded,openf1,1407,125,True,False,openf1 (125 rcm rows),
-2024,12,Silverstone,2024-07-07,downloaded,openf1,962,110,True,False,openf1 (110 rcm rows),
-2024,13,Hungaroring,2024-07-21,downloaded,openf1,1356,75,True,False,openf1 (75 rcm rows),
-2024,14,Spa-Francorchamps,2024-07-28,downloaded,openf1,842,23,True,False,openf1 (23 rcm rows),
-2024,15,Zandvoort,2024-08-25,downloaded,openf1,1426,84,True,False,openf1 (84 rcm rows),
-2024,16,Monza,2024-09-01,downloaded,openf1,1009,61,True,False,openf1 (61 rcm rows),
-2024,17,Baku,2024-09-15,downloaded,openf1,975,115,True,False,openf1 (115 rcm rows),
-2024,18,Singapore,2024-09-22,downloaded,openf1,1179,63,True,False,openf1 (63 rcm rows),
-2024,19,Austin,2024-10-20,downloaded,openf1,1059,120,True,False,openf1 (120 rcm rows),
-2024,20,Mexico City,2024-10-27,downloaded,openf1,1216,120,True,False,openf1 (120 rcm rows),
-2024,21,Interlagos,2024-11-03,downloaded,openf1,1137,111,True,False,openf1 (111 rcm rows),
-2024,22,Las Vegas,2024-11-24,downloaded,openf1,940,37,True,False,openf1 (37 rcm rows),
-2024,23,Lusail,2024-12-01,downloaded,openf1,944,112,True,False,openf1 (112 rcm rows),
-2024,24,Yas Marina Circuit,2024-12-08,downloaded,openf1,1037,131,True,False,openf1 (131 rcm rows),
-2025,1,Melbourne,2025-03-16,downloaded,openf1,928,115,True,False,openf1 (115 rcm rows),
-2025,2,Shanghai,2025-03-23,downloaded,openf1,1066,58,True,False,openf1 (58 rcm rows),
-2025,3,Suzuka,2025-04-06,downloaded,openf1,1059,25,True,False,openf1 (25 rcm rows),
-2025,4,Sakhir,2025-04-13,downloaded,openf1,1129,93,True,False,openf1 (93 rcm rows),
-2025,5,Jeddah,2025-04-20,downloaded,openf1,899,67,True,False,openf1 (67 rcm rows),
-2025,6,Miami,2025-05-04,excluded: incomplete upstream feed (44.4% laps missing),openf1,559,78,True,False,openf1 (78 rcm rows),incomplete upstream feed (44.4% laps missing)
-2025,7,Imola,2025-05-18,downloaded,openf1,1207,46,True,False,openf1 (46 rcm rows),
-2025,8,Monte Carlo,2025-05-25,downloaded,openf1,1425,198,True,False,openf1 (198 rcm rows),
-2025,9,Catalunya,2025-06-01,downloaded,openf1,1204,102,True,False,openf1 (102 rcm rows),
-2025,10,Montreal,2025-06-15,downloaded,openf1,1349,98,True,False,openf1 (98 rcm rows),
-2025,11,Spielberg,2025-06-29,downloaded,openf1,1128,119,True,False,openf1 (119 rcm rows),
-2025,12,Silverstone,2025-07-06,downloaded,openf1,827,158,True,False,openf1 (158 rcm rows),
-2025,13,Spa-Francorchamps,2025-07-27,downloaded,openf1,879,117,True,False,openf1 (117 rcm rows),
-2025,14,Hungaroring,2025-08-03,downloaded,openf1,1369,95,True,False,openf1 (95 rcm rows),
-2025,15,Zandvoort,2025-08-31,downloaded,openf1,1365,110,True,False,openf1 (110 rcm rows),
-2025,16,Monza,2025-09-07,downloaded,openf1,976,73,True,False,openf1 (73 rcm rows),
-2025,17,Baku,2025-09-21,downloaded,openf1,968,73,True,False,openf1 (73 rcm rows),
-2025,18,Singapore,2025-10-05,downloaded,openf1,1229,121,True,False,openf1 (121 rcm rows),
-2025,19,Austin,2025-10-19,downloaded,openf1,1067,81,True,False,openf1 (81 rcm rows),
-2025,20,Mexico City,2025-10-26,downloaded,openf1,1266,78,True,False,openf1 (78 rcm rows),
-2025,21,Interlagos,2025-11-09,downloaded,openf1,1252,58,True,False,openf1 (58 rcm rows),
-2025,22,Las Vegas,2025-11-23,downloaded,openf1,888,63,True,False,openf1 (63 rcm rows),
-2025,23,Lusail,2025-11-30,downloaded,openf1,1070,81,True,False,openf1 (81 rcm rows),
-2025,24,Yas Marina Circuit,2025-12-07,downloaded,openf1,1156,109,True,False,openf1 (109 rcm rows),
+season,round,event_name,date,status,source,laps_rows,rcm_rows,deleted_known,isaccurate_known,rcm_note,error,track_id
+2022,1,Bahrain Grand Prix,2022-03-20 00:00:00,cached,fastf1,1125,-1,True,True,cached parquet,,sakhir
+2022,2,Saudi Arabian Grand Prix,2022-03-27 00:00:00,cached,fastf1,820,-1,True,True,cached parquet,,jeddah
+2022,3,Australian Grand Prix,2022-04-10 00:00:00,cached,fastf1,1045,-1,True,True,cached parquet,,melbourne
+2022,4,Emilia Romagna Grand Prix,2022-04-24 00:00:00,cached,fastf1,1132,-1,True,True,cached parquet,,imola
+2022,5,Miami Grand Prix,2022-05-08 00:00:00,cached,fastf1,1057,-1,True,True,cached parquet,,miami
+2022,6,Spanish Grand Prix,2022-05-22 00:00:00,cached,fastf1,1230,-1,True,True,cached parquet,,barcelona
+2022,7,Monaco Grand Prix,2022-05-29 00:00:00,cached,fastf1,1179,-1,True,True,cached parquet,,monaco
+2022,8,Azerbaijan Grand Prix,2022-06-12 00:00:00,cached,fastf1,891,-1,True,True,cached parquet,,baku
+2022,9,Canadian Grand Prix,2022-06-19 00:00:00,cached,fastf1,1264,-1,True,True,cached parquet,,montreal
+2022,10,British Grand Prix,2022-07-03 00:00:00,cached,fastf1,815,-1,True,True,cached parquet,,silverstone
+2022,11,Austrian Grand Prix,2022-07-10 00:00:00,cached,fastf1,1324,-1,True,True,cached parquet,,spielberg
+2022,12,French Grand Prix,2022-07-24 00:00:00,cached,fastf1,958,-1,True,True,cached parquet,,paul_ricard
+2022,13,Hungarian Grand Prix,2022-07-31 00:00:00,cached,fastf1,1383,-1,True,True,cached parquet,,hungaroring
+2022,14,Belgian Grand Prix,2022-08-28 00:00:00,cached,fastf1,792,-1,True,True,cached parquet,,spa
+2022,15,Dutch Grand Prix,2022-09-04 00:00:00,cached,fastf1,1392,-1,True,True,cached parquet,,zandvoort
+2022,16,Italian Grand Prix,2022-09-11 00:00:00,cached,fastf1,971,-1,True,True,cached parquet,,monza
+2022,17,Singapore Grand Prix,2022-10-02 00:00:00,cached,fastf1,945,-1,True,True,cached parquet,,singapore
+2022,18,Japanese Grand Prix,2022-10-09 00:00:00,cached,fastf1,507,-1,True,True,cached parquet,,suzuka
+2022,19,United States Grand Prix,2022-10-23 00:00:00,cached,fastf1,992,-1,True,True,cached parquet,,austin
+2022,20,Mexico City Grand Prix,2022-10-30 00:00:00,cached,fastf1,1379,-1,True,True,cached parquet,,mexico_city
+2022,21,São Paulo Grand Prix,2022-11-13 00:00:00,cached,fastf1,1259,-1,True,True,cached parquet,,interlagos
+2022,22,Abu Dhabi Grand Prix,2022-11-20 00:00:00,cached,fastf1,1117,-1,True,True,cached parquet,,yas_marina
+2023,1,Sakhir,2023-03-05,cached,openf1,1058,-1,True,False,cached parquet,,sakhir
+2023,2,Jeddah,2023-03-19,cached,openf1,945,-1,True,False,cached parquet,,jeddah
+2023,3,Melbourne,2023-04-02,cached,openf1,1006,-1,True,False,cached parquet,,melbourne
+2023,4,Baku,2023-04-30,cached,openf1,963,-1,True,False,cached parquet,,baku
+2023,5,Miami,2023-05-07,cached,openf1,1139,-1,True,False,cached parquet,,miami
+2023,6,Imola,2023-05-21,cancelled,openf1,0,0,False,False,openf1 validation failed,cancelled by organisers (heavy flooding in Emilia-Romagna),imola
+2023,7,Monte Carlo,2023-05-28,downloaded,openf1,1516,244,True,False,openf1 (244 rcm rows),,monaco
+2023,8,Catalunya,2023-06-04,downloaded,openf1,1312,49,True,False,openf1 (49 rcm rows),,barcelona
+2023,9,Montreal,2023-06-18,downloaded,openf1,1318,77,True,False,openf1 (77 rcm rows),,montreal
+2023,10,Spielberg,2023-07-02,downloaded,openf1,1355,212,True,False,openf1 (212 rcm rows),,spielberg
+2023,11,Silverstone,2023-07-09,downloaded,openf1,974,46,True,False,openf1 (46 rcm rows),,silverstone
+2023,12,Hungaroring,2023-07-23,downloaded,openf1,1255,87,True,False,openf1 (87 rcm rows),,hungaroring
+2023,13,Spa-Francorchamps,2023-07-30,downloaded,openf1,817,56,True,False,openf1 (56 rcm rows),,spa
+2023,14,Zandvoort,2023-08-27,downloaded,openf1,1344,78,True,False,openf1 (78 rcm rows),,zandvoort
+2023,15,Monza,2023-09-03,downloaded,openf1,968,45,True,False,openf1 (45 rcm rows),,monza
+2023,16,Singapore,2023-09-17,downloaded,openf1,1091,76,True,False,openf1 (76 rcm rows),,singapore
+2023,17,Suzuka,2023-09-24,downloaded,openf1,886,73,True,False,openf1 (73 rcm rows),,suzuka
+2023,18,Lusail,2023-10-08,downloaded,openf1,1009,137,True,False,openf1 (137 rcm rows),,lusail
+2023,19,Austin,2023-10-22,downloaded,openf1,1017,81,True,False,openf1 (81 rcm rows),,austin
+2023,20,Mexico City,2023-10-29,downloaded,openf1,1286,100,True,False,openf1 (100 rcm rows),,mexico_city
+2023,21,Interlagos,2023-11-05,downloaded,openf1,1112,55,True,False,openf1 (55 rcm rows),,interlagos
+2023,22,Las Vegas,2023-11-19,downloaded,openf1,949,75,True,False,openf1 (75 rcm rows),,las_vegas
+2023,23,Yas Marina Circuit,2023-11-26,downloaded,openf1,1159,67,True,False,openf1 (67 rcm rows),,yas_marina
+2024,1,Sakhir,2024-03-02,downloaded,openf1,1129,71,True,False,openf1 (71 rcm rows),,sakhir
+2024,2,Jeddah,2024-03-09,downloaded,openf1,902,68,True,False,openf1 (68 rcm rows),,jeddah
+2024,3,Melbourne,2024-03-24,downloaded,openf1,998,84,True,False,openf1 (84 rcm rows),,melbourne
+2024,4,Suzuka,2024-04-07,downloaded,openf1,908,70,True,False,openf1 (70 rcm rows),,suzuka
+2024,5,Shanghai,2024-04-21,downloaded,openf1,1033,58,True,False,openf1 (58 rcm rows),,shanghai
+2024,6,Miami,2024-05-05,downloaded,openf1,1112,77,True,False,openf1 (77 rcm rows),,miami
+2024,7,Imola,2024-05-19,downloaded,openf1,1239,100,True,False,openf1 (100 rcm rows),,imola
+2024,8,Monte Carlo,2024-05-26,downloaded,openf1,1237,122,True,False,openf1 (122 rcm rows),,monaco
+2024,9,Montreal,2024-06-09,downloaded,openf1,1272,130,True,False,openf1 (130 rcm rows),,montreal
+2024,10,Catalunya,2024-06-23,downloaded,openf1,1310,107,True,False,openf1 (107 rcm rows),,barcelona
+2024,11,Spielberg,2024-06-30,downloaded,openf1,1407,125,True,False,openf1 (125 rcm rows),,spielberg
+2024,12,Silverstone,2024-07-07,downloaded,openf1,962,110,True,False,openf1 (110 rcm rows),,silverstone
+2024,13,Hungaroring,2024-07-21,downloaded,openf1,1356,75,True,False,openf1 (75 rcm rows),,hungaroring
+2024,14,Spa-Francorchamps,2024-07-28,downloaded,openf1,842,23,True,False,openf1 (23 rcm rows),,spa
+2024,15,Zandvoort,2024-08-25,downloaded,openf1,1426,84,True,False,openf1 (84 rcm rows),,zandvoort
+2024,16,Monza,2024-09-01,downloaded,openf1,1009,61,True,False,openf1 (61 rcm rows),,monza
+2024,17,Baku,2024-09-15,downloaded,openf1,975,115,True,False,openf1 (115 rcm rows),,baku
+2024,18,Singapore,2024-09-22,downloaded,openf1,1179,63,True,False,openf1 (63 rcm rows),,singapore
+2024,19,Austin,2024-10-20,downloaded,openf1,1059,120,True,False,openf1 (120 rcm rows),,austin
+2024,20,Mexico City,2024-10-27,downloaded,openf1,1216,120,True,False,openf1 (120 rcm rows),,mexico_city
+2024,21,Interlagos,2024-11-03,downloaded,openf1,1137,111,True,False,openf1 (111 rcm rows),,interlagos
+2024,22,Las Vegas,2024-11-24,downloaded,openf1,940,37,True,False,openf1 (37 rcm rows),,las_vegas
+2024,23,Lusail,2024-12-01,downloaded,openf1,944,112,True,False,openf1 (112 rcm rows),,lusail
+2024,24,Yas Marina Circuit,2024-12-08,downloaded,openf1,1037,131,True,False,openf1 (131 rcm rows),,yas_marina
+2025,1,Melbourne,2025-03-16,downloaded,openf1,928,115,True,False,openf1 (115 rcm rows),,melbourne
+2025,2,Shanghai,2025-03-23,downloaded,openf1,1066,58,True,False,openf1 (58 rcm rows),,shanghai
+2025,3,Suzuka,2025-04-06,downloaded,openf1,1059,25,True,False,openf1 (25 rcm rows),,suzuka
+2025,4,Sakhir,2025-04-13,downloaded,openf1,1129,93,True,False,openf1 (93 rcm rows),,sakhir
+2025,5,Jeddah,2025-04-20,downloaded,openf1,899,67,True,False,openf1 (67 rcm rows),,jeddah
+2025,6,Miami,2025-05-04,excluded: incomplete upstream feed (44.4% laps missing),openf1,559,78,True,False,openf1 (78 rcm rows),incomplete upstream feed (44.4% laps missing),miami
+2025,7,Imola,2025-05-18,downloaded,openf1,1207,46,True,False,openf1 (46 rcm rows),,imola
+2025,8,Monte Carlo,2025-05-25,downloaded,openf1,1425,198,True,False,openf1 (198 rcm rows),,monaco
+2025,9,Catalunya,2025-06-01,downloaded,openf1,1204,102,True,False,openf1 (102 rcm rows),,barcelona
+2025,10,Montreal,2025-06-15,downloaded,openf1,1349,98,True,False,openf1 (98 rcm rows),,montreal
+2025,11,Spielberg,2025-06-29,downloaded,openf1,1128,119,True,False,openf1 (119 rcm rows),,spielberg
+2025,12,Silverstone,2025-07-06,downloaded,openf1,827,158,True,False,openf1 (158 rcm rows),,silverstone
+2025,13,Spa-Francorchamps,2025-07-27,downloaded,openf1,879,117,True,False,openf1 (117 rcm rows),,spa
+2025,14,Hungaroring,2025-08-03,downloaded,openf1,1369,95,True,False,openf1 (95 rcm rows),,hungaroring
+2025,15,Zandvoort,2025-08-31,downloaded,openf1,1365,110,True,False,openf1 (110 rcm rows),,zandvoort
+2025,16,Monza,2025-09-07,downloaded,openf1,976,73,True,False,openf1 (73 rcm rows),,monza
+2025,17,Baku,2025-09-21,downloaded,openf1,968,73,True,False,openf1 (73 rcm rows),,baku
+2025,18,Singapore,2025-10-05,downloaded,openf1,1229,121,True,False,openf1 (121 rcm rows),,singapore
+2025,19,Austin,2025-10-19,downloaded,openf1,1067,81,True,False,openf1 (81 rcm rows),,austin
+2025,20,Mexico City,2025-10-26,downloaded,openf1,1266,78,True,False,openf1 (78 rcm rows),,mexico_city
+2025,21,Interlagos,2025-11-09,downloaded,openf1,1252,58,True,False,openf1 (58 rcm rows),,interlagos
+2025,22,Las Vegas,2025-11-23,downloaded,openf1,888,63,True,False,openf1 (63 rcm rows),,las_vegas
+2025,23,Lusail,2025-11-30,downloaded,openf1,1070,81,True,False,openf1 (81 rcm rows),,lusail
+2025,24,Yas Marina Circuit,2025-12-07,downloaded,openf1,1156,109,True,False,openf1 (109 rcm rows),,yas_marina
