@@ -1,21 +1,17 @@
-import os
-import json
-import argparse
+import os, json, argparse
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from src.download import load_config
-from src.features import fit_baseline_curves, predict_causal_baseline, build_7_features, build_horizon_targets
+from src.features import fit_baseline_curves, predict_causal_baseline, build_stint_features, build_horizon_targets
 from src.models import create_gru_model, count_parameters
 
 
 class StintSequenceDataset(Dataset):
     """Dataset yielding sliding sequence windows of stint laps and 20-lap targets."""
-
     def __init__(self, sequences, targets):
-        """Store sequence features and target residual matrices."""
         self.num_x = torch.tensor(sequences["numeric"], dtype=torch.float32)
         self.trk = torch.tensor(sequences["track"], dtype=torch.long)
         self.cmp = torch.tensor(sequences["compound"], dtype=torch.long)
@@ -24,11 +20,9 @@ class StintSequenceDataset(Dataset):
         self.targets[~self.mask] = 0.0
 
     def __len__(self):
-        """Return total number of sequence samples."""
         return len(self.num_x)
 
     def __getitem__(self, idx):
-        """Return a single sample containing inputs, targets, and valid mask."""
         return self.num_x[idx], self.trk[idx], self.cmp[idx], self.targets[idx], self.mask[idx]
 
 
@@ -53,20 +47,33 @@ def extract_padded_windows(full_numeric, feats, targets, seq_len=10):
     return num_wins, trk_wins, cmp_wins, tgt_wins
 
 
-def build_sequences_from_laps(laps_df, seq_len=10):
-    """Build fixed-window input sequences and horizon targets from cleaned laps."""
-    curves, global_curve = fit_baseline_curves(laps_df)
-    tracks = sorted(laps_df["track_id"].unique())
-    track_map = {t: idx + 1 for idx, t in enumerate(tracks)}
-    compounds = sorted(laps_df["compound"].unique())
-    compound_map = {c: idx + 1 for idx, c in enumerate(compounds)}
+def resolve_maps_and_curves(laps_df, curves, global_curve, track_map, compound_map):
+    """Resolve curves and categorical mappings if not provided."""
+    if curves is None or global_curve is None:
+        curves, global_curve = fit_baseline_curves(laps_df)
+    if track_map is None:
+        tracks = sorted(laps_df["track_id"].unique())
+        track_map = {t: idx + 1 for idx, t in enumerate(tracks)}
+    if compound_map is None:
+        compounds = sorted(laps_df["compound"].unique())
+        compound_map = {c: idx + 1 for idx, c in enumerate(compounds)}
+    return curves, global_curve, track_map, compound_map
 
+
+def build_sequences_from_laps(laps_df, seq_len=10, curves=None, global_curve=None, track_map=None, compound_map=None):
+    """Build fixed-window input sequences and horizon targets from cleaned laps."""
+    curves, global_curve, track_map, compound_map = resolve_maps_and_curves(
+        laps_df, curves, global_curve, track_map, compound_map
+    )
     num_list, trk_list, cmp_list, tgt_list = [], [], [], []
-    num_cols = ["tyre_age", "lap_fraction", "relative_pace", "track_temp", "track_status", "gap_mask"]
+    num_cols = [
+        "tyre_age", "lap_fraction", "relative_pace", "track_temp",
+        "track_status", "gap_mask", "track_temp_delta_c"
+    ]
 
     for stint_id in laps_df["stint_id"].unique():
         sub = laps_df[laps_df["stint_id"] == stint_id].sort_values("stint_lap")
-        feats = build_7_features(sub, track_map, compound_map)
+        feats = build_stint_features(sub, track_map, compound_map, include_temp_delta=True)
         baseline = predict_causal_baseline(sub, curves, global_curve)
         targets = build_horizon_targets(sub, baseline, horizon=20)
         curr_res = (sub["lap_time_fc_s"].values - baseline).reshape(-1, 1)
@@ -134,17 +141,30 @@ def evaluate_model(model, loader):
     return {f"mae_h{h}": float(np.mean(errors[h])) if errors[h] else np.nan for h in [1, 5, 10]}
 
 
+def setup_training_datasets(train_laps, val_laps, seq_len=10):
+    """Build datasets using train-fitted curves and vocabularies."""
+    curves, global_curve = fit_baseline_curves(train_laps)
+    tracks = sorted(train_laps["track_id"].unique())
+    track_map = {t: idx + 1 for idx, t in enumerate(tracks)}
+    compounds = sorted(train_laps["compound"].unique())
+    compound_map = {c: idx + 1 for idx, c in enumerate(compounds)}
+    tr_ds = build_sequences_from_laps(train_laps, seq_len, curves, global_curve, track_map, compound_map)
+    va_ds = build_sequences_from_laps(val_laps, seq_len, curves, global_curve, track_map, compound_map)
+    return tr_ds, va_ds
+
+
+def setup_pilot_loaders(train_laps, val_laps, batch_size=64):
+    """Build datasets and data loaders using train-fitted curves and vocabularies."""
+    tr_ds, va_ds = setup_training_datasets(train_laps, val_laps, seq_len=10)
+    return DataLoader(tr_ds, batch_size=batch_size, shuffle=True), DataLoader(va_ds, batch_size=batch_size, shuffle=False)
+
+
 def run_pilot(train_laps, val_laps, run_name="pilot", epochs=3, seed=42):
     """Run a small pilot training on CPU and record metrics in runs/."""
     torch.manual_seed(seed)
     np.random.seed(seed)
-    train_ds = build_sequences_from_laps(train_laps)
-    val_ds = build_sequences_from_laps(val_laps)
-
-    train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=64, shuffle=False)
-
-    model = create_gru_model()
+    train_loader, val_loader = setup_pilot_loaders(train_laps, val_laps, batch_size=64)
+    model = create_gru_model(num_numeric=8)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
     loss_fn = nn.HuberLoss(reduction="none", delta=1.0)
 
@@ -153,27 +173,24 @@ def run_pilot(train_laps, val_laps, run_name="pilot", epochs=3, seed=42):
         print(f"Epoch {epoch}/{epochs} - Train Loss: {loss:.4f}")
 
     metrics = evaluate_model(model, val_loader)
-    metrics["epochs"] = epochs
-    metrics["param_count"] = count_parameters(model)
-
+    metrics["epochs"], metrics["param_count"] = epochs, count_parameters(model)
     run_dir = os.path.join("runs", run_name)
     os.makedirs(run_dir, exist_ok=True)
     with open(os.path.join(run_dir, "metrics.json"), "w") as file:
         json.dump(metrics, file, indent=2)
-
     print(f"Pilot run completed. Metrics: {metrics}")
     return metrics
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="TyreSense GRU training script")
-    parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs")
-    parser.add_argument("--run-name", type=str, default="pilot", help="Run directory name")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    args = parser.parse_args()
+    p = argparse.ArgumentParser(description="TyreSense GRU training script")
+    p.add_argument("--epochs", type=int, default=5)
+    p.add_argument("--run-name", type=str, default="pilot")
+    p.add_argument("--seed", type=int, default=42)
+    args = p.parse_args()
 
     cfg = load_config("config.yaml")
     laps = pd.read_parquet(os.path.join(cfg["paths"]["processed_dir"], "laps.parquet"))
-    tr_df = laps[laps["race_id"] == "2023_01"]
-    va_df = laps[laps["race_id"] == "2023_02"]
-    run_pilot(tr_df, va_df, run_name=args.run_name, epochs=args.epochs, seed=args.seed)
+    tr = laps[laps["race_id"] == "2023_01"]
+    va = laps[laps["race_id"] == "2023_02"]
+    run_pilot(tr, va, run_name=args.run_name, epochs=args.epochs, seed=args.seed)

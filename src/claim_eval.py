@@ -7,11 +7,12 @@ from src.live import compute_cliff_life, update_k_factor
 from src.clean import flag_spikes_causal
 
 
-def compute_pwe(pred_life, actual_life):
-    """Compute Pit Window Error in laps between predicted and actual cliff."""
-    if pred_life is None or actual_life is None:
+def compute_pwe(pred_life, actual_life, max_horizon=20):
+    """Compute Pit Window Error in laps, capping non-crossing forecasts at max_horizon."""
+    if actual_life is None or pd.isna(actual_life):
         return np.nan
-    return abs(float(pred_life) - float(actual_life))
+    eff_pred = max_horizon if (pred_life is None or pd.isna(pred_life)) else float(pred_life)
+    return abs(eff_pred - float(actual_life))
 
 
 def forecast_stint_pace(stint_df, curves, global_curve, lap_idx, horizon=20):
@@ -76,10 +77,47 @@ def run_paired_bootstrap(diffs, n_boot=1000, seed=42):
     return float(np.mean(boot_means)), float(np.std(boot_means)), (ci_low, ci_high)
 
 
+def score_censored_stints(censored_df, laps_df, curves, global_curve, lap, threshold_s=1.0):
+    """Score concordance for censored stints (fraction predicting survival past observed laps)."""
+    cens_roll, cens_froz = [], []
+    for _, row in censored_df.iterrows():
+        stint_id = row["stint_id"]
+        sub = laps_df[laps_df["stint_id"] == stint_id].sort_values("stint_lap")
+        preds = simulate_modes_at_lap(sub, curves, global_curve, target_lap=lap, threshold_s=threshold_s)
+        if preds is not None:
+            stint_len = float(len(sub))
+            r_life = 20.0 if preds["rolling"] is None else float(preds["rolling"])
+            f_life = 20.0 if preds["frozen"] is None else float(preds["frozen"])
+            cens_roll.append(r_life >= stint_len)
+            cens_froz.append(f_life >= stint_len)
+    cr = float(np.mean(cens_roll)) if cens_roll else np.nan
+    cf = float(np.mean(cens_froz)) if cens_froz else np.nan
+    return len(cens_roll), cr, cf
+
+
+def build_exp9_record(lap, froz_arr, roll_arr, e_arr, mean_diff, ci, c_n, c_roll, c_froz):
+    """Format single stint lap evaluation summary record."""
+    ci_l, ci_h = ci
+    return {
+        "stint_lap": lap, "effective_n": int(len(froz_arr)),
+        "pwe_frozen": round(float(np.nanmean(froz_arr)), 2),
+        "pwe_rolling": round(float(np.nanmean(roll_arr)), 2),
+        "pwe_mode_e": round(float(np.nanmean(e_arr)), 2),
+        "share_within_2_rolling": round(float(np.mean(roll_arr <= 2.0)), 3),
+        "share_within_2_mode_e": round(float(np.mean(e_arr <= 2.0)), 3),
+        "rolling_vs_frozen_diff": round(mean_diff, 2),
+        "ci_95": f"[{ci_l:.2f}, {ci_h:.2f}]",
+        "censored_n": c_n,
+        "censored_concordance_rolling": round(c_roll, 3) if not np.isnan(c_roll) else np.nan,
+        "censored_concordance_frozen": round(c_froz, 3) if not np.isnan(c_froz) else np.nan
+    }
+
+
 def evaluate_exp9_stints(stints_df, laps_df, curves, global_curve, eval_laps=(3, 5, 7), threshold_s=1.0):
-    """Evaluate PWE and 2-lap accuracy across stints for EXP-9."""
+    """Evaluate PWE and 2-lap accuracy across stints for EXP-9 reporting effective N."""
     records = []
     uncensored = stints_df[stints_df["censored"] == False]
+    censored = stints_df[stints_df["censored"] == True]
 
     for lap in eval_laps:
         pwe_froz, pwe_roll, pwe_e = [], [], []
@@ -94,17 +132,9 @@ def evaluate_exp9_stints(stints_df, laps_df, curves, global_curve, eval_laps=(3,
                 pwe_e.append(compute_pwe(preds["mode_e"], true_life))
 
         froz_arr, roll_arr, e_arr = np.array(pwe_froz), np.array(pwe_roll), np.array(pwe_e)
-        mean_diff, _, (ci_l, ci_h) = run_paired_bootstrap(froz_arr - roll_arr)
-        records.append({
-            "stint_lap": lap,
-            "pwe_frozen": round(float(np.nanmean(froz_arr)), 2),
-            "pwe_rolling": round(float(np.nanmean(roll_arr)), 2),
-            "pwe_mode_e": round(float(np.nanmean(e_arr)), 2),
-            "share_within_2_rolling": round(float(np.mean(roll_arr <= 2.0)), 3),
-            "share_within_2_mode_e": round(float(np.mean(e_arr <= 2.0)), 3),
-            "rolling_vs_frozen_diff": round(mean_diff, 2),
-            "ci_95": f"[{ci_l:.2f}, {ci_h:.2f}]"
-        })
+        mean_diff, _, ci = run_paired_bootstrap(froz_arr - roll_arr)
+        c_n, c_roll, c_froz = score_censored_stints(censored, laps_df, curves, global_curve, lap, threshold_s)
+        records.append(build_exp9_record(lap, froz_arr, roll_arr, e_arr, mean_diff, ci, c_n, c_roll, c_froz))
     return pd.DataFrame(records)
 
 

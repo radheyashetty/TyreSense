@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from src.download import load_config
 from src.models import create_gru_model, create_rnn_model, create_lstm_model, count_parameters
-from src.train import build_sequences_from_laps, train_one_epoch, evaluate_model
+from src.train import setup_training_datasets, train_one_epoch, evaluate_model
 from src.features import fit_baseline_curves, build_7_features, predict_causal_baseline, build_horizon_targets
 from src.baselines import predict_model_a, predict_model, train_baselines_for_horizons
 from src.evaluate import extract_features_and_targets, compute_mae
@@ -163,8 +163,7 @@ def run_all_ablations(config_path="config.yaml"):
     tr_df = laps[laps["race_id"] == "2023_01"]
     va_df = laps[laps["race_id"] == "2023_02"]
 
-    train_ds = build_sequences_from_laps(tr_df)
-    val_ds = build_sequences_from_laps(va_df)
+    train_ds, val_ds = setup_training_datasets(tr_df, va_df)
     train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=64, shuffle=False)
 

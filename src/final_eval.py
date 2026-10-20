@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from src.download import load_config
 from src.models import create_gru_model
-from src.train import build_sequences_from_laps, evaluate_model, train_one_epoch
+from src.train import setup_training_datasets, evaluate_model, train_one_epoch
 from src.live import compute_cliff_life
 from src.features import fit_baseline_curves
 from src.claim_eval import forecast_stint_pace
@@ -26,8 +26,7 @@ def evaluate_final_model(train_laps, test_laps, epochs=5, seed=42):
     """Train locked Model E / GRU on training laps and evaluate once on held-out laps."""
     torch.manual_seed(seed)
     np.random.seed(seed)
-    train_ds = build_sequences_from_laps(train_laps)
-    test_ds = build_sequences_from_laps(test_laps)
+    train_ds, test_ds = setup_training_datasets(train_laps, test_laps)
 
     train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
     test_loader = DataLoader(test_ds, batch_size=64, shuffle=False)

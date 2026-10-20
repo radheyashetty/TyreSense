@@ -7,7 +7,7 @@ from sklearn.linear_model import Lasso
 from torch.utils.data import DataLoader
 from src.download import load_config
 from src.models import create_gru_model
-from src.train import build_sequences_from_laps, train_one_epoch, evaluate_model
+from src.train import setup_training_datasets, train_one_epoch, evaluate_model
 
 
 def run_exp4_l2_sweep(train_loader, val_loader):
@@ -114,8 +114,7 @@ def run_part2_ablations(config_path="config.yaml"):
     tr_df = laps[laps["race_id"] == "2023_01"]
     va_df = laps[laps["race_id"] == "2023_02"]
 
-    train_ds = build_sequences_from_laps(tr_df)
-    val_ds = build_sequences_from_laps(va_df)
+    train_ds, val_ds = setup_training_datasets(tr_df, va_df)
     train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=64, shuffle=False)
 

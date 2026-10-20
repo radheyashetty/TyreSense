@@ -30,7 +30,7 @@ class MonotoneHead(nn.Module):
 class RecurrentForecaster(nn.Module):
     """Recurrent model forecasting fuel-corrected residuals for 20 laps."""
 
-    def __init__(self, rnn_type="gru", hidden_dim=32, num_numeric=7, head_type="free", num_tracks=30, num_compounds=10):
+    def __init__(self, rnn_type="gru", hidden_dim=32, num_numeric=8, head_type="free", num_tracks=50, num_compounds=10):
         super().__init__()
         self.track_emb = nn.Embedding(num_tracks, 4)
         self.compound_emb = nn.Embedding(num_compounds, 3)
@@ -64,16 +64,16 @@ class RecurrentForecaster(nn.Module):
         return self.head(last_step)
 
 
-def create_gru_model(hidden=32, num_numeric=7, head="free"):
+def create_gru_model(hidden=32, num_numeric=8, head="free"):
     """Instantiate primary GRU forecaster model D with matched budget."""
     return RecurrentForecaster("gru", hidden_dim=hidden, num_numeric=num_numeric, head_type=head)
 
 
-def create_rnn_model(hidden=58, num_numeric=7, head="free"):
+def create_rnn_model(hidden=58, num_numeric=8, head="free"):
     """Instantiate vanilla RNN forecaster with matched 5% parameter budget."""
     return RecurrentForecaster("rnn", hidden_dim=hidden, num_numeric=num_numeric, head_type=head)
 
 
-def create_lstm_model(hidden=27, num_numeric=7, head="free"):
+def create_lstm_model(hidden=27, num_numeric=8, head="free"):
     """Instantiate LSTM forecaster with matched 5% parameter budget."""
     return RecurrentForecaster("lstm", hidden_dim=hidden, num_numeric=num_numeric, head_type=head)

@@ -25,7 +25,7 @@ def test_dropout_layers_train_at_inference():
 def test_mc_dropout_ordering():
     """Verify that p10 <= p50 <= p90 across MC-dropout passes."""
     model = create_gru_model()
-    num_x = torch.randn(1, 10, 7)
+    num_x = torch.randn(1, 10, 8)
     trk = torch.randint(0, 5, (1, 10))
     cmp = torch.randint(0, 3, (1, 10))
 

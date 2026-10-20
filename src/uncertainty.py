@@ -70,7 +70,7 @@ def sample_stint_intervals(model, num_samples=40):
     """Draw MC-Dropout interval percentiles and synthetic true usable lives."""
     p10_list, p50_list, p90_list, true_list = [], [], [], []
     for _ in range(num_samples):
-        x = torch.randn(1, 10, 7)
+        x = torch.randn(1, 10, 8)
         trk = torch.randint(0, 5, (1, 10))
         cmp = torch.randint(0, 3, (1, 10))
         p10, p50, p90 = mc_dropout_stint_pass(model, x, trk, cmp, passes=30)

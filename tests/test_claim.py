@@ -7,8 +7,14 @@ from src.claim_eval import compute_pwe, run_paired_bootstrap, simulate_modes_at_
 def test_compute_pwe_valid():
     assert compute_pwe(20.0, 18.0) == 2.0
     assert compute_pwe(15.5, 17.5) == 2.0
-    assert np.isnan(compute_pwe(None, 18.0))
+    assert compute_pwe(None, 18.0) == 2.0
     assert np.isnan(compute_pwe(20.0, None))
+
+
+def test_compute_pwe_capped_and_effective_n():
+    """Verify non-crossing forecasts are capped at 20 laps and scored."""
+    pwe = compute_pwe(None, 15.0, max_horizon=20)
+    assert pwe == 5.0
 
 
 def test_run_paired_bootstrap():

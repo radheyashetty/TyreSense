@@ -14,7 +14,7 @@ def filter_step(df, mask, filter_name, attrition_list):
     """Apply boolean mask to dataframe and record dropped rows for attrition."""
     rows_dropped = len(df) - int(mask.sum())
     filtered_df = df[mask].copy()
-    attrition_list.append({"filter_name": filter_name, "rows_dropped": rows_dropped, "rows_remaining": len(filtered_df)})
+    attrition_list.append({"filter_name": filter_name, "rows_dropped": rows_dropped, "rows_flagged": 0, "rows_remaining": len(filtered_df)})
     return filtered_df
 
 
@@ -25,12 +25,14 @@ def apply_basic_filters(df, attrition_list):
     df = filter_step(df, pit_mask, "drop_in_out_laps", attrition_list)
     sc_mask = ~df["TrackStatus"].astype(str).str.contains("[4567]")
     df = filter_step(df, sc_mask, "drop_sc_vsc", attrition_list)
-    acc_mask = df["IsAccurate"].fillna(False).astype(bool)
+    # Retain accurate laps: FastF1 boolean True/False; OpenF1 NaN defaults to True
+    acc_mask = df["IsAccurate"].fillna(True).astype(bool)
     if "Deleted" in df.columns:
         acc_mask = acc_mask & (~(df["Deleted"] == True))
     df = filter_step(df, acc_mask, "drop_inaccurate_deleted", attrition_list)
     req_cols = ["LapTime", "TrackTemp", "TyreLife", "Compound"]
-    return filter_step(df, df[req_cols].notna().all(axis=1), "drop_missing_fields", attrition_list)
+    valid_mask = df[req_cols].notna().all(axis=1) & (df["Compound"].astype(str) != "None")
+    return filter_step(df, valid_mask, "drop_missing_fields", attrition_list)
 
 
 def split_stints_and_gaps(dataframe, max_gap=3):
@@ -106,6 +108,7 @@ def prepare_race_columns(raw_df, config):
     df["lap_time_s"] = df["LapTime"].dt.total_seconds()
     df["track_temp_c"] = df["TrackTemp"]
     df["track_status"] = df["TrackStatus"].astype(str)
+    assert not df["TyreLife"].isna().any(), "TyreLife must not contain nulls"
     df["tyre_age"] = df["TyreLife"].astype(int)
     df["compound"] = df["Compound"]
     fuel_c = compute_fuel_coefficient(df["track_id"].iloc[0], config)
@@ -116,14 +119,16 @@ def prepare_race_columns(raw_df, config):
 def clean_race_dataframe(raw_df, config):
     """Execute complete cleaning pipeline for a single raw race dataframe."""
     initial_count = len(raw_df)
-    attrition = [{"filter_name": "initial_rows", "rows_dropped": 0, "rows_remaining": initial_count}]
+    attrition = [{"filter_name": "initial_rows", "rows_dropped": 0, "rows_flagged": 0, "rows_remaining": initial_count}]
     if is_wet_race(raw_df):
-        attrition.append({"filter_name": "drop_wet_race", "rows_dropped": initial_count, "rows_remaining": 0})
+        attrition.append({"filter_name": "drop_wet_race", "rows_dropped": initial_count, "rows_flagged": 0, "rows_remaining": 0})
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(attrition)
 
-    df = prepare_race_columns(raw_df, config)
-    filtered = apply_basic_filters(df, attrition)
-    split_df = split_stints_and_gaps(filtered, max_gap=config["cleaning"]["max_gap_laps"])
+    attrition.append({"filter_name": "drop_wet_race", "rows_dropped": 0, "rows_flagged": 0, "rows_remaining": initial_count})
+    df = apply_basic_filters(raw_df, attrition)
+    assert not df["TyreLife"].isna().any(), "Raw TyreLife contains nulls after basic filters"
+    df = prepare_race_columns(df, config)
+    split_df = split_stints_and_gaps(df, max_gap=config["cleaning"]["max_gap_laps"])
     stint_lengths = split_df.groupby("stint_id")["stint_lap"].transform("max")
     clean_laps = filter_step(split_df, stint_lengths >= config["cleaning"]["min_stint_laps"], "drop_short_stints", attrition)
 
@@ -135,7 +140,7 @@ def clean_race_dataframe(raw_df, config):
         flags = [flag_spikes_offline(grp, th, rec, win) for _, grp in clean_laps.groupby("stint_id")]
         spike_flags = pd.concat(flags).reindex(clean_laps.index).fillna(False)
         clean_laps["gap_mask"] = (clean_laps["gap_mask"].values | spike_flags.astype(int).values)
-        attrition.append({"filter_name": "flag_spikes", "rows_dropped": int(spike_flags.sum()), "rows_remaining": len(clean_laps)})
+        attrition.append({"filter_name": "flag_spikes", "rows_dropped": 0, "rows_flagged": int(spike_flags.sum()), "rows_remaining": len(clean_laps)})
 
     cols = ["race_id", "track_id", "driver", "stint_id", "stint_lap", "tyre_age", "compound",
             "lap_number", "total_laps", "lap_time_s", "lap_time_fc_s", "track_temp_c", "track_status", "gap_mask"]

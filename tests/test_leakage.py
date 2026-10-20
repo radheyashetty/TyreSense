@@ -4,6 +4,7 @@ from src.download import load_config
 from src.split import split_by_race, fit_train_scaler, build_track_mapping
 from src.features import fit_baseline_curves, predict_causal_baseline, build_7_features
 from src.clean import flag_spikes_causal
+from src.train import build_sequences_from_laps, setup_training_datasets
 
 
 def create_mock_stint():
@@ -73,3 +74,21 @@ def test_leakage_5_app_replay_sees_only_laps_up_to_t():
     observed = stint[stint["stint_lap"] <= curr_lap]
     assert int(observed["stint_lap"].max()) == curr_lap
     assert len(observed) == curr_lap
+
+
+def test_leakage_val_uses_train_curves():
+    """Verify that validation sequence extraction uses train curves, not refitted curves."""
+    train_laps = create_mock_stint()
+    train_laps["track_id"] = "track_A"
+    train_laps["compound"] = "HARD"
+
+    val_laps = create_mock_stint()
+    val_laps["race_id"] = "2024_01"
+    val_laps["stint_id"] = "2024_01_VER_1"
+    val_laps["track_id"] = "track_A"
+    val_laps["compound"] = "HARD"
+    val_laps["lap_time_fc_s"] = [120.0 + 0.1 * i for i in range(12)]
+
+    tr_ds, val_ds = setup_training_datasets(train_laps, val_laps, seq_len=5)
+    sample_residual = val_ds.num_x[0, -1, -1].item()
+    assert sample_residual > 15.0, f"Residual ({sample_residual}) indicates curves were refit on validation!"

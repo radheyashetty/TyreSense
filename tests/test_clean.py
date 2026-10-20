@@ -95,3 +95,34 @@ def test_usable_life_and_censoring():
     stints_censored = compute_stint_labels(laps_censored, threshold_s=1.0)
     assert stints_censored["life_laps"].iloc[0] == 15
     assert stints_censored["censored"].iloc[0]
+
+
+def test_attrition_table_reconciliation_full():
+    """Verify that reports/attrition.csv drops reconcile from initial to remaining."""
+    att = pd.read_csv("reports/attrition.csv")
+    init = int(att[att["filter_name"] == "initial_rows"]["rows_remaining"].iloc[0])
+    drops = int(att[att["filter_name"].str.startswith("drop_")]["rows_dropped"].sum())
+    final_rem = int(att[att["filter_name"] == "flag_spikes"]["rows_remaining"].iloc[0])
+    assert init - drops == final_rem, f"Reconciliation failed: {init} - {drops} != {final_rem}"
+
+
+def test_isaccurate_and_none_compound_rules():
+    """Verify that IsAccurate=NaN is retained, and compound 'None' string is dropped."""
+    from src.clean import apply_basic_filters
+    sample = pd.DataFrame({
+        "LapNumber": [2, 3, 4],
+        "PitInTime": [pd.NaT, pd.NaT, pd.NaT],
+        "PitOutTime": [pd.NaT, pd.NaT, pd.NaT],
+        "TrackStatus": ["1", "1", "1"],
+        "IsAccurate": [np.nan, False, True],
+        "Deleted": [False, False, False],
+        "LapTime": [pd.Timedelta(seconds=90)] * 3,
+        "TrackTemp": [30.0] * 3,
+        "TyreLife": [1.0, 2.0, 3.0],
+        "Compound": ["SOFT", "MEDIUM", "None"]
+    })
+    att = []
+    filtered = apply_basic_filters(sample, att)
+    # Lap 2 (IsAccurate NaN) retained; Lap 3 (False) dropped; Lap 4 ('None' compound) dropped
+    assert len(filtered) == 1
+    assert filtered["LapNumber"].iloc[0] == 2
