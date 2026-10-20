@@ -2,5 +2,9 @@
   "P0": {
     "status": "COMPLETED",
     "timestamp": "2026-10-21T03:31:11.456072"
+  },
+  "PART_A": {
+    "status": "COMPLETED",
+    "timestamp": "2026-10-21T03:33:23.342879"
   }
 }

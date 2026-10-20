@@ -79,6 +79,16 @@ def flag_spikes_causal(history, threshold_s=2.0, window=3):
     return bool(times[-1] - med > threshold_s)
 
 
+def detect_stint_cliff(stint_laps, times, baseline_time_s, threshold_s=1.0):
+    """Find first lap >= 4 where degradation >= threshold for 2 consecutive laps."""
+    n = len(times)
+    is_deg = (times >= baseline_time_s + threshold_s)
+    for i in range(n - 1):
+        if stint_laps[i] >= 4 and is_deg[i] and is_deg[i + 1]:
+            return int(stint_laps[i]), False
+    return int(stint_laps[-1]), True
+
+
 def compute_stint_labels(clean_laps_df, threshold_s=1.0):
     """Compute early-laps baseline, usable life laps, and censoring flag."""
     stints_records = []
@@ -86,11 +96,12 @@ def compute_stint_labels(clean_laps_df, threshold_s=1.0):
         sub = clean_laps_df[clean_laps_df["stint_id"] == stint_id].sort_values("stint_lap")
         early_laps = sub[sub["stint_lap"] <= 3]
         baseline_time_s = float(early_laps["lap_time_fc_s"].mean())
-        deg_laps = sub[sub["lap_time_fc_s"] >= baseline_time_s + threshold_s]
-        life_laps = int(deg_laps["stint_lap"].iloc[0]) if len(deg_laps) > 0 else int(sub["stint_lap"].max())
+        life_laps, censored = detect_stint_cliff(
+            sub["stint_lap"].values, sub["lap_time_fc_s"].values, baseline_time_s, threshold_s
+        )
         stints_records.append({
             "stint_id": stint_id, "baseline_time_s": baseline_time_s,
-            "life_laps": life_laps, "censored": len(deg_laps) == 0
+            "life_laps": life_laps, "censored": censored
         })
     return pd.DataFrame(stints_records)
 

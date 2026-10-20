@@ -126,3 +126,32 @@ def test_isaccurate_and_none_compound_rules():
     # Lap 2 (IsAccurate NaN) retained; Lap 3 (False) dropped; Lap 4 ('None' compound) dropped
     assert len(filtered) == 1
     assert filtered["LapNumber"].iloc[0] == 2
+
+
+def test_persistent_cliff_label_rules():
+    """Verify 2 consecutive laps degradation rule and lap >= 4 constraint."""
+    # Stint with single-lap spike at lap 5: should NOT fire cliff
+    single_spike = pd.DataFrame({
+        "stint_id": ["s1"] * 8, "stint_lap": list(range(1, 9)),
+        "lap_time_fc_s": [90.0, 90.0, 90.0, 90.1, 91.5, 90.1, 90.2, 90.0]
+    })
+    res_spk = compute_stint_labels(single_spike, threshold_s=1.0)
+    assert bool(res_spk["censored"].iloc[0]) is True
+    assert int(res_spk["life_laps"].iloc[0]) == 8
+
+    # Stint with early spike at laps 2-3 (before lap 4): should NOT fire
+    early_spike = pd.DataFrame({
+        "stint_id": ["s2"] * 8, "stint_lap": list(range(1, 9)),
+        "lap_time_fc_s": [90.0, 91.5, 91.5, 90.1, 90.1, 90.2, 90.0, 90.0]
+    })
+    res_early = compute_stint_labels(early_spike, threshold_s=1.0)
+    assert bool(res_early["censored"].iloc[0]) is True
+
+    # Stint with 2 consecutive laps degradation at laps 5-6: SHOULD fire at lap 5
+    valid_cliff = pd.DataFrame({
+        "stint_id": ["s3"] * 8, "stint_lap": list(range(1, 9)),
+        "lap_time_fc_s": [90.0, 90.0, 90.0, 90.1, 91.5, 91.6, 91.8, 92.0]
+    })
+    res_valid = compute_stint_labels(valid_cliff, threshold_s=1.0)
+    assert bool(res_valid["censored"].iloc[0]) is False
+    assert int(res_valid["life_laps"].iloc[0]) == 5
