@@ -66,38 +66,15 @@ def compute_coverage_summary(p50, p10, p90, true_lives, scale_s):
     }
 
 
-def sample_stint_intervals(model, num_samples=40):
-    """Draw MC-Dropout interval percentiles and synthetic true usable lives."""
-    p10_list, p50_list, p90_list, true_list = [], [], [], []
-    for _ in range(num_samples):
-        x = torch.randn(1, 10, 8)
-        trk = torch.randint(0, 5, (1, 10))
-        cmp = torch.randint(0, 3, (1, 10))
-        p10, p50, p90 = mc_dropout_stint_pass(model, x, trk, cmp, passes=30)
-        true_life = float(np.clip(p50 + np.random.normal(0, 2.0), 1, 21))
-        p10_list.append(p10)
-        p50_list.append(p50)
-        p90_list.append(p90)
-        true_list.append(true_life)
-    return np.array(p50_list), np.array(p10_list), np.array(p90_list), np.array(true_list)
-
-
 def run_exp10(config_path="config.yaml"):
-    """Execute EXP-10 MC-dropout uncertainty calibration and save reports."""
-    cfg = load_config(config_path)
-    model = create_gru_model()
-    torch.manual_seed(42)
-    np.random.seed(42)
-    p50_arr, p10_arr, p90_arr, true_arr = sample_stint_intervals(model, num_samples=40)
-
-    scale_s = fit_interval_scale_factor(p50_arr, p10_arr, p90_arr, true_arr, target_coverage=0.80)
-    summary = compute_coverage_summary(p50_arr, p10_arr, p90_arr, true_arr, scale_s)
-
-    rep_path = os.path.join(cfg["paths"]["reports_dir"], "uncertainty_coverage.csv")
-    pd.DataFrame([summary]).to_csv(rep_path, index=False)
-    abl_path = os.path.join(cfg["paths"]["reports_dir"], "ablation.csv")
-    if os.path.exists(abl_path):
-        abl_df = pd.read_csv(abl_path)
-        row = {"experiment": "EXP-10", "condition": "mc_dropout_scaling", "metric": f"raw_cov={summary['raw_80_coverage']},scaled_cov={summary['scaled_80_coverage']},scale_s={summary['scale_factor_s']}"}
-        pd.concat([abl_df, pd.DataFrame([row])], ignore_index=True).to_csv(abl_path, index=False)
-    return summary
+    """Execute EXP-10 MC-dropout uncertainty calibration on real validation stints."""
+    from src.runner_part_e import run_part_e
+    df_cov = run_part_e()
+    row_80 = df_cov[df_cov["target_coverage"] == 0.80].iloc[0]
+    return {
+        "raw_80_coverage": float(row_80["raw_coverage"]),
+        "raw_width": float(row_80["raw_width"]),
+        "scale_factor_s": float(row_80["scale_factor_s"]),
+        "scaled_80_coverage": float(row_80["scaled_coverage"]),
+        "scaled_width": float(row_80["scaled_width"])
+    }
