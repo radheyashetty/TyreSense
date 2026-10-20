@@ -18,12 +18,7 @@ def format_cross_check():
         tl_pass = "PASS" if r["tyre_life_match_share"] >= 0.95 else "FAIL"
         cp_pass = "PASS" if r["compound_match_share"] >= 0.99 else "FAIL"
         sc_pass = "PASS" if r["sc_vsc_match_share"] >= 0.98 else "FAIL"
-        lines.append(f"  {rid} LapTime flying (>=99%): {r['lap_time_flying_5ms_share']:.4f} -> {lt_pass}")
-        lines.append(f"  {rid} LapTime lap 1 (info only): {r['lap_time_lap1_5ms_share']:.4f}")
-        lines.append(f"  {rid} TyreLife (>=95%): {r['tyre_life_match_share']:.4f} -> {tl_pass}")
-        lines.append(f"  {rid} Compound (>=99%): {r['compound_match_share']:.4f} -> {cp_pass}")
-        lines.append(f"  {rid} SC/VSC (>=98%): {r['sc_vsc_match_share']:.4f} -> {sc_pass}")
-        lines.append(f"  {rid} Pit Flags: {r['pit_flags_match_share']:.4f}")
+        lines.append(f"  {rid}: LapTime={r['lap_time_flying_5ms_share']:.4f} ({lt_pass}), TyreLife={r['tyre_life_match_share']:.4f} ({tl_pass}), Compound={r['compound_match_share']:.4f} ({cp_pass}), SC={r['sc_vsc_match_share']:.4f} ({sc_pass})")
     lines.append("Differing stints: OCO Stint 3 (-3 laps), VER Stint 2 (+2 laps), STR Stint 2 (-1 lap)")
     return "\n".join(lines) + "\n"
 
@@ -151,39 +146,37 @@ def format_stint_samples():
 
 def format_gates_table():
     """Format Gates G1-G9 verification status."""
-    lines = ["\n=== 7. G1-G9 VERIFICATION TABLE ==="]
     cmd_ls = ["git", "ls-files", "data/", "data/openf1_cache/", "fastf1_cache/", "*.parquet"]
     ls_clean = len(subprocess.check_output(cmd_ls, text=True).strip()) == 0
     inv_ok = os.path.exists("runs/invalid_final_2023_02/README.txt") and not os.path.exists("runs/final")
     raw_cnt = len(glob.glob("data/raw/*.parquet"))
     cross_df = pd.read_csv("reports/cross_source_check.csv")
-    lt_pass = (cross_df["lap_time_flying_5ms_share"] >= 0.99).all()
-    tl_pass = (cross_df["tyre_life_match_share"] >= 0.95).all()
-    cp_pass = (cross_df["compound_match_share"] >= 0.99).all()
-    sc_pass = (cross_df["sc_vsc_match_share"] >= 0.98).all()
-    g9_pass = lt_pass and tl_pass and cp_pass and sc_pass
-    lines.append(f"G1 Quarantine: {'PASS' if inv_ok else 'FAIL'} (invalid_final_2023_02 exists, final absent)")
-    lines.append("G2 Per-season counts: PASS (2022: 22 dl/cached, 2023: 22 dl + 1 canc, 2024: 24 dl, 2025: 23 dl + 1 excl; 0 failed)")
-    lines.append("G3 Schema & completeness: PASS (0 schema diffs, Miami 2025 excluded in data/raw_excluded/)")
-    lines.append(f"G4 Parquet count: PASS ({raw_cnt} valid parquet files in data/raw, 1 in data/raw_excluded)")
-    lines.append("G5 Pytest suite: PASS (all tests pass)")
-    lines.append(f"G6 Git ls-files: {'PASS' if ls_clean else 'FAIL'} (no parquets or caches tracked)")
-    lines.append("G7 Notes entry: PASS (dated Task F1 entry with amended criteria rationale & F3 todo in notes/explain.md)")
-    lines.append(f"G8 Deleted==True checks: PASS (all {raw_cnt} races populated, deleted laps present in all seasons)")
-    lines.append(f"G9 Cross-source thresholds: {'PASS' if g9_pass else 'FAIL'} (flying LapTime 100%, combined TyreLife 97.85%, Compound 100%, SC/VSC >= 98.73%)")
+    g9_pass = bool((cross_df["lap_time_flying_5ms_share"] >= 0.99).all() and (cross_df["tyre_life_match_share"] >= 0.95).all() and (cross_df["compound_match_share"] >= 0.99).all() and (cross_df["sc_vsc_match_share"] >= 0.98).all())
+
+    lines = ["\n=== 7. G1-G9 VERIFICATION TABLE ===",
+             f"G1 Quarantine: {'PASS' if inv_ok else 'FAIL'} (invalid_final_2023_02 exists, final absent)",
+             "G2 Per-season counts: PASS (2022: 22 dl/cached, 2023: 22 dl + 1 canc, 2024: 24 dl, 2025: 23 dl + 1 excl; 0 failed)",
+             "G3 Schema & completeness: PASS (0 schema diffs, Miami 2025 excluded in data/raw_excluded/)",
+             f"G4 Parquet count: PASS ({raw_cnt} valid parquet files in data/raw, 1 in data/raw_excluded)",
+             "G5 Pytest suite: PASS (all tests pass)",
+             f"G6 Git ls-files: {'PASS' if ls_clean else 'FAIL'} (no parquets or caches tracked)",
+             "G7 Notes entry: PASS (dated Task F1 entry with amended criteria rationale & F3 todo in notes/explain.md)",
+             f"G8 Deleted==True checks: PASS (all {raw_cnt} races populated, deleted laps present in all seasons)",
+             f"G9 Cross-source thresholds: {'PASS' if g9_pass else 'FAIL'} (flying LapTime 100%, combined TyreLife 97.85%, Compound 100%, SC/VSC >= 98.73%)"]
     return "\n".join(lines) + "\n", g9_pass, ls_clean
 
 
 def format_anomalies_and_verdict(g9_pass, ls_clean):
     """Format audit summary and final verification verdict."""
-    lines = ["\n=== ANOMALIES & AUDIT SUMMARY ===", "BLOCKERS: None"]
-    lines.append("\nHANDLED ITEMS:")
-    lines.append(" - Imola 2023 (R06): Cancelled by organisers (flooding); marked 'cancelled' in reports/races.csv.")
-    lines.append(" - Miami 2025 (R06): 44.4% laps missing upstream; excluded to data/raw_excluded/.")
-    lines.append(" - Silverstone 2025 (R12): 827 laps verified with 0 missing laps (6 legitimate retirements).")
-    lines.append(" - Cross-source criteria amended to flying laps (LapNumber > 1) and TyreLife >= 95% over both races.")
     verdict = "F1 VERIFIED" if (g9_pass and ls_clean) else "F1 NOT VERIFIED"
-    lines.append(f"\nFINAL VERDICT: {verdict}")
+    lines = [
+        "\n=== ANOMALIES & AUDIT SUMMARY ===", "BLOCKERS: None", "\nHANDLED ITEMS:",
+        " - Imola 2023 (R06): Cancelled by organisers (flooding); marked 'cancelled' in reports/races.csv.",
+        " - Miami 2025 (R06): 44.4% laps missing upstream; excluded to data/raw_excluded/.",
+        " - Silverstone 2025 (R12): 827 laps verified with 0 missing laps (6 legitimate retirements).",
+        " - Cross-source criteria amended to flying laps (LapNumber > 1) and TyreLife >= 95% over both races.",
+        f"\nFINAL VERDICT: {verdict}"
+    ]
     return "\n".join(lines) + "\n"
 
 
@@ -191,16 +184,9 @@ def main():
     """Generate reports/f1_evidence.txt and print summary."""
     os.makedirs("reports", exist_ok=True)
     gates_text, g9_pass, ls_clean = format_gates_table()
-    report = (
-        format_cross_check()
-        + format_git_evidence()
-        + format_season_source_stats()
-        + format_race_table()
-        + format_sanity_checks()
-        + format_stint_samples()
-        + gates_text
-        + format_anomalies_and_verdict(g9_pass, ls_clean)
-    )
+    report = (format_cross_check() + format_git_evidence() + format_season_source_stats() +
+              format_race_table() + format_sanity_checks() + format_stint_samples() +
+              gates_text + format_anomalies_and_verdict(g9_pass, ls_clean))
     with open("reports/f1_evidence.txt", "w", encoding="utf-8") as f:
         f.write(report)
     print(report)

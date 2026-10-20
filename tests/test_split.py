@@ -9,49 +9,26 @@ from src.split import (
 )
 
 
+def make_mock_row(race_id, track_id, lap_time, censored):
+    """Helper to construct a mock race lap dictionary."""
+    return {
+        "race_id": race_id, "track_id": track_id, "driver": "VER",
+        "stint_id": f"{race_id}_VER_1", "stint_lap": 5, "tyre_age": 5,
+        "lap_time_s": lap_time, "lap_time_fc_s": lap_time - 1.0,
+        "life_laps": 25, "censored": censored
+    }
+
+
 def create_mock_dataset():
     """Create a controlled mock dataset spanning train (2022-2023), val (2024), and test (2025)."""
-    records = []
-    # 2022-2023 train races
-    for race_id in ["2022_01", "2023_01", "2023_02"]:
-        records.append({
-            "race_id": race_id,
-            "track_id": f"Track_{race_id}",
-            "driver": "VER",
-            "stint_id": f"{race_id}_VER_1",
-            "stint_lap": 5,
-            "tyre_age": 5,
-            "lap_time_s": 90.0,
-            "lap_time_fc_s": 89.0,
-            "life_laps": 25,
-            "censored": False
-        })
-    # 2024 validation race
-    records.append({
-        "race_id": "2024_01",
-        "track_id": "Track_2024_01",
-        "driver": "VER",
-        "stint_id": "2024_01_VER_1",
-        "stint_lap": 5,
-        "tyre_age": 5,
-        "lap_time_s": 92.0,
-        "lap_time_fc_s": 91.0,
-        "life_laps": 30,
-        "censored": True
-    })
-    # 2025 test race
-    records.append({
-        "race_id": "2025_01",
-        "track_id": "Track_New_2025",
-        "driver": "VER",
-        "stint_id": "2025_01_VER_1",
-        "stint_lap": 5,
-        "tyre_age": 5,
-        "lap_time_s": 88.0,
-        "lap_time_fc_s": 87.0,
-        "life_laps": 20,
-        "censored": False
-    })
+    configs = [
+        ("2022_01", "Track_2022_01", 90.0, False),
+        ("2023_01", "Track_2023_01", 90.0, False),
+        ("2023_02", "Track_2023_02", 90.0, False),
+        ("2024_01", "Track_2024_01", 92.0, True),
+        ("2025_01", "Track_New_2025", 88.0, False)
+    ]
+    records = [make_mock_row(r, t, lp, c) for r, t, lp, c in configs]
     return pd.DataFrame(records)
 
 

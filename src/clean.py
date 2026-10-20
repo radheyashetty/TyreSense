@@ -127,6 +127,18 @@ def prepare_race_columns(raw_df, config):
     return df
 
 
+def apply_spike_flagging(clean_laps, config, attrition):
+    """Optionally flag pace spikes in clean laps if configured."""
+    if not config.get("spike", {}).get("enabled", False) or clean_laps.empty:
+        return clean_laps
+    th, rec, win = config["spike"]["threshold_s"], config["spike"]["recover_s"], config["spike"]["window"]
+    flags = [flag_spikes_offline(grp, th, rec, win) for _, grp in clean_laps.groupby("stint_id")]
+    spike_flags = pd.concat(flags).reindex(clean_laps.index).fillna(False)
+    clean_laps["gap_mask"] = (clean_laps["gap_mask"].values | spike_flags.astype(int).values)
+    attrition.append({"filter_name": "flag_spikes", "rows_dropped": 0, "rows_flagged": int(spike_flags.sum()), "rows_remaining": len(clean_laps)})
+    return clean_laps
+
+
 def clean_race_dataframe(raw_df, config):
     """Execute complete cleaning pipeline for a single raw race dataframe."""
     initial_count = len(raw_df)
@@ -142,16 +154,7 @@ def clean_race_dataframe(raw_df, config):
     split_df = split_stints_and_gaps(df, max_gap=config["cleaning"]["max_gap_laps"])
     stint_lengths = split_df.groupby("stint_id")["stint_lap"].transform("max")
     clean_laps = filter_step(split_df, stint_lengths >= config["cleaning"]["min_stint_laps"], "drop_short_stints", attrition)
-
-    # Optional offline spike filter
-    if config.get("spike", {}).get("enabled", False) and not clean_laps.empty:
-        th = config["spike"]["threshold_s"]
-        rec = config["spike"]["recover_s"]
-        win = config["spike"]["window"]
-        flags = [flag_spikes_offline(grp, th, rec, win) for _, grp in clean_laps.groupby("stint_id")]
-        spike_flags = pd.concat(flags).reindex(clean_laps.index).fillna(False)
-        clean_laps["gap_mask"] = (clean_laps["gap_mask"].values | spike_flags.astype(int).values)
-        attrition.append({"filter_name": "flag_spikes", "rows_dropped": 0, "rows_flagged": int(spike_flags.sum()), "rows_remaining": len(clean_laps)})
+    clean_laps = apply_spike_flagging(clean_laps, config, attrition)
 
     cols = ["race_id", "track_id", "driver", "stint_id", "stint_lap", "tyre_age", "compound",
             "lap_number", "total_laps", "lap_time_s", "lap_time_fc_s", "track_temp_c", "track_status", "gap_mask"]

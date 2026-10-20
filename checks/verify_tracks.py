@@ -89,6 +89,23 @@ def fetch_source_length(url, parser_fn, target_km=None):
         return None, 0, str(err)
 
 
+def verify_single_track(tid, urls, info, today_str):
+    """Fetch lengths from 2 sources and evaluate agreement for a single circuit."""
+    f1_url, wiki_url = urls
+    base_len = info.get("length_km")
+    l_f1, _, err_f1 = fetch_source_length(f1_url, parse_f1_html)
+    l_wiki, _, err_wiki = fetch_source_length(wiki_url, parse_wiki_html, target_km=l_f1 or base_len)
+    agree = (l_f1 is not None and l_wiki is not None and abs(l_f1 - l_wiki) <= 0.010)
+
+    r1 = {"circuit": tid, "source": "formula1.com", "url": f1_url, "number_found": l_f1, "date_fetched": today_str, "agrees": "yes" if agree else "no", "notes": err_f1}
+    r2 = {"circuit": tid, "source": "wikipedia", "url": wiki_url, "number_found": l_wiki, "date_fetched": today_str, "agrees": "yes" if agree else "no", "notes": err_wiki}
+    if agree and l_f1 is not None:
+        info.update({"verified": True, "length_km": l_f1, "source": f1_url, "verified_on": today_str})
+    else:
+        info.update({"verified": False, "source": f1_url if l_f1 is not None else wiki_url, "verified_on": today_str})
+    return [r1, r2], agree
+
+
 def run_track_verification():
     """Verify all 25 tracks across two independent sources and update tracks.yaml."""
     today_str = str(date.today())
@@ -97,48 +114,18 @@ def run_track_verification():
         cfg = yaml.safe_load(f)
 
     verified_count = 0
-    unverified_count = 0
-
-    for tid, (f1_url, wiki_url) in sorted(CIRCUITS.items()):
+    for tid, urls in sorted(CIRCUITS.items()):
         info = cfg["tracks"].get(tid, {})
-        base_len = info.get("length_km")
-
-        l_f1, sc_f1, err_f1 = fetch_source_length(f1_url, parse_f1_html)
-        target = l_f1 if l_f1 is not None else base_len
-        l_wiki, sc_wiki, err_wiki = fetch_source_length(wiki_url, parse_wiki_html, target_km=target)
-
-        agree = False
-        if l_f1 is not None and l_wiki is not None:
-            agree = abs(l_f1 - l_wiki) <= 0.010
-
-        records.append({
-            "circuit": tid, "source": "formula1.com", "url": f1_url,
-            "number_found": l_f1, "date_fetched": today_str,
-            "agrees": "yes" if agree else "no", "notes": err_f1
-        })
-        records.append({
-            "circuit": tid, "source": "wikipedia", "url": wiki_url,
-            "number_found": l_wiki, "date_fetched": today_str,
-            "agrees": "yes" if agree else "no", "notes": err_wiki
-        })
-
-        if agree and l_f1 is not None:
-            info["verified"] = True
-            info["length_km"] = l_f1
-            info["source"] = f1_url
-            info["verified_on"] = today_str
+        recs, agree = verify_single_track(tid, urls, info, today_str)
+        records.extend(recs)
+        if agree:
             verified_count += 1
-        else:
-            info["verified"] = False
-            info["source"] = f1_url if l_f1 is not None else wiki_url
-            info["verified_on"] = today_str
-            unverified_count += 1
 
     os.makedirs(os.path.dirname(VERIFY_CSV), exist_ok=True)
     pd.DataFrame(records).to_csv(VERIFY_CSV, index=False)
     with open(TRACKS_CONFIG, "w", encoding="utf-8") as f:
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
-    print(f"Track verification complete: {verified_count}/25 verified, {unverified_count} unverified. Saved to {VERIFY_CSV}")
+    print(f"Track verification: {verified_count}/25 verified. Saved to {VERIFY_CSV}")
 
 
 if __name__ == "__main__":
