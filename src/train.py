@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from src.download import load_config
+from src.split import assert_no_2025_data
 from src.features import fit_baseline_curves, predict_causal_baseline, build_stint_features, build_horizon_targets
 from src.models import create_gru_model, count_parameters
 
@@ -143,6 +144,8 @@ def evaluate_model(model, loader):
 
 def setup_training_datasets(train_laps, val_laps, seq_len=10):
     """Build datasets using train-fitted curves and vocabularies."""
+    assert_no_2025_data(train_laps, "train_laps")
+    assert_no_2025_data(val_laps, "val_laps")
     curves, global_curve = fit_baseline_curves(train_laps)
     tracks = sorted(train_laps["track_id"].unique())
     track_map = {t: idx + 1 for idx, t in enumerate(tracks)}

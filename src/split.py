@@ -8,6 +8,13 @@ def extract_season_from_race_id(race_id):
     return int(str(race_id).split("_")[0])
 
 
+def assert_no_2025_data(df, context=""):
+    """Enforce R3 test lock: assert no 2025 race_ids exist in train or val data."""
+    if df is not None and not df.empty and "race_id" in df.columns:
+        years = df["race_id"].astype(str).str.split("_").str[0].astype(int)
+        assert not (years == 2025).any(), f"R3 Violation: 2025 data detected in {context}!"
+
+
 def split_by_race(dataframe, config):
     """Split dataframe into train, validation, and test splits strictly by race season."""
     seasons = config["seasons"]

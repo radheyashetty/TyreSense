@@ -102,3 +102,14 @@ def test_leakage_4_forbidden_inputs():
     forbidden_features = ["life_laps", "stint_length", "censored", "baseline_time_s"]
     for forbidden in forbidden_features:
         assert forbidden not in allowed_inputs, f"Leakage: {forbidden} found in inputs"
+
+
+def test_r3_test_lock_assertion():
+    """Verify that assert_no_2025_data raises AssertionError when 2025 data is provided."""
+    import pytest
+    from src.split import assert_no_2025_data
+    df_2025 = pd.DataFrame({"race_id": ["2025_01", "2024_01"], "val": [1, 2]})
+    with pytest.raises(AssertionError, match="R3 Violation: 2025 data detected"):
+        assert_no_2025_data(df_2025, "test_check")
+    df_clean = pd.DataFrame({"race_id": ["2022_01", "2024_01"], "val": [1, 2]})
+    assert_no_2025_data(df_clean, "clean_check")  # should pass cleanly
