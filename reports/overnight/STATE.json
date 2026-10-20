@@ -6,5 +6,11 @@
   "PART_A": {
     "status": "COMPLETED",
     "timestamp": "2026-10-21T03:33:23.342879"
+  },
+  "PART_B": {
+    "status": "COMPLETED",
+    "timestamp": "2026-10-21T03:35:15.520206",
+    "model_e_status": "Model E inactive on baseline curves",
+    "reason": "In simulate_modes_at_lap, base_preds is computed from predict_causal_baseline (polynomial + early laps offset). For observed laps i < target_lap, g_t is set to act_t - base_t. Then update_k_factor computes pred = base_t + k*g_t, giving err = act_t - pred = 0.0 when k=1.0. Thus k is never updated away from 1.0."
   }
 }

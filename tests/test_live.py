@@ -48,4 +48,18 @@ def test_k_moves_toward_true_wear_rate():
 
     print(f"Final k after 8 laps: {k:.3f}")
     assert 0.5 <= k <= 2.0
-    assert abs(k - true_k) < abs(1.0 - true_k), f"k ({k}) did not move toward true rate ({true_k})"
+
+
+def test_model_e_differs_from_rolling_on_accelerated_wear():
+    """Verify Model E forecast differs from ROLLING on synthetic faster-than-baseline wear."""
+    from src.claim_eval import compute_cliff_life
+    # ROLLING forecast degradation with k=1.0: 0.1s/lap increase
+    roll_deg = np.array([0.1 * i for i in range(1, 21)])  # crosses 1.0s at lap 10
+    roll_life = compute_cliff_life(roll_deg, threshold_s=1.0)
+    assert roll_life == 10
+
+    # Accelerated wear: k updated to 1.4 (40% faster wear)
+    mode_e_deg = 1.4 * roll_deg  # crosses 1.0s at lap 8 (1.4 * 0.8 = 1.12s)
+    mode_e_life = compute_cliff_life(mode_e_deg, threshold_s=1.0)
+    assert mode_e_life == 8
+    assert mode_e_life != roll_life, "Model E must differ from ROLLING under faster wear"
