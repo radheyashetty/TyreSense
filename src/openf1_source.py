@@ -18,8 +18,11 @@ def get_cache_path(cache_dir, endpoint, identifier):
 def read_cached_json(file_path):
     """Read and return JSON data from local cache if file exists."""
     if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
     return None
 
 
@@ -128,7 +131,12 @@ def process_openf1_race(event, raw_dir, openf1_dir, wait_fn=time.sleep):
     e_name = str(event.get("EventName", event.get("circuit_short_name", "Grand Prix")))
     e_date = str(event.get("EventDate", str(event.get("date_start", ""))[:10]))
     file_path = os.path.join(raw_dir, f"race_{year}_{r_num:02d}.parquet")
-    df, rcm_cnt = fetch_and_convert_openf1_race(event, r_num, year, openf1_dir, wait_fn=wait_fn)
+    try:
+        df, rcm_cnt = fetch_and_convert_openf1_race(event, r_num, year, openf1_dir, wait_fn=wait_fn)
+    except Exception as err:
+        return {"season": year, "round": r_num, "event_name": e_name, "date": e_date,
+                "status": f"failed: {str(err)}", "source": "openf1", "laps_rows": 0, "rcm_rows": 0,
+                "deleted_known": False, "isaccurate_known": False, "rcm_note": "fetch failed", "error": str(err)}
     is_val, rsn = validate_race_dataframe(df, rcm_count=rcm_cnt, allow_missing_rcm=False)
     laps_cnt = len(df) if df is not None else 0
     if is_val and df is not None:

@@ -1,7 +1,9 @@
 # Data and cache
-data/
+/data/
 data/openf1_cache/
+data/jolpica_cache/
 data/raw_excluded/
+!tests/data/
 fastf1_cache/
 .fastf1_cache/
 logs_*.txt

@@ -76,6 +76,7 @@ def build_stint_lookup(stints_data):
                 raw_end = row.get("lap_end")
                 end_base = int(raw_end) if raw_end is not None else l_start
                 l_end = max(end_base, l_start) + 20
+            l_end = max(l_end, l_start)
             for lap in range(l_start, l_end + 1):
                 tl = float(age_start + (lap - l_start) + 1)
                 lookup[(d, lap)] = (s_num, comp, tl)
@@ -129,19 +130,21 @@ def assign_stints_and_sectors(df, bundle, drivers):
     df["Stint"], df["Compound"], df["TyreLife"] = stints, comps, tls
     team_map = {d["driver_number"]: d.get("team_name", "") for d in drivers.values()}
     df["Team"] = df["driver_number"].map(team_map)
-    df["Sector1Time"] = pd.to_timedelta(df.get("duration_sector_1"), unit="s")
-    df["Sector2Time"] = pd.to_timedelta(df.get("duration_sector_2"), unit="s")
-    df["Sector3Time"] = pd.to_timedelta(df.get("duration_sector_3"), unit="s")
-    df["SpeedI1"] = df.get("i1_speed", np.nan).astype(float)
-    df["SpeedI2"] = df.get("i2_speed", np.nan).astype(float)
+    df["Sector1Time"] = pd.to_timedelta(df["duration_sector_1"], unit="s") if "duration_sector_1" in df.columns else pd.NaT
+    df["Sector2Time"] = pd.to_timedelta(df["duration_sector_2"], unit="s") if "duration_sector_2" in df.columns else pd.NaT
+    df["Sector3Time"] = pd.to_timedelta(df["duration_sector_3"], unit="s") if "duration_sector_3" in df.columns else pd.NaT
+    df["SpeedI1"] = df["i1_speed"].astype(float) if "i1_speed" in df.columns else np.nan
+    df["SpeedI2"] = df["i2_speed"].astype(float) if "i2_speed" in df.columns else np.nan
     df["SpeedFL"] = np.nan
-    df["SpeedST"] = df.get("st_speed", np.nan).astype(float)
+    df["SpeedST"] = df["st_speed"].astype(float) if "st_speed" in df.columns else np.nan
 
 
 def assign_pit_and_race_control(df, bundle):
     """Assign pit in/out timedeltas, deleted laps, and track status."""
     df["PitOutTime"] = pd.to_timedelta([np.nan] * len(df))
     df["PitInTime"] = pd.to_timedelta([np.nan] * len(df))
+    if "is_pit_out_lap" not in df.columns:
+        df["is_pit_out_lap"] = False
     for _, grp in df.groupby("DriverNumber"):
         out_indices = grp[grp["is_pit_out_lap"] == True].index
         for idx in out_indices:
@@ -169,11 +172,8 @@ def assemble_race_dataframe(df, event_info, round_number, year):
     df["Location"] = str(event_info.get("location", event_info.get("circuit_short_name", "Circuit")))
     df["RoundNumber"] = int(round_number)
     df["Year"] = int(year)
-    df["Position"] = np.nan
-    df["IsPersonalBest"] = None
-    df["FreshTyre"] = False
-    df["FastF1Generated"] = False
-    df["IsAccurate"] = np.nan
+    df["Position"], df["IsPersonalBest"] = np.nan, None
+    df["FreshTyre"], df["FastF1Generated"], df["IsAccurate"] = False, False, np.nan
     cols = get_part1_columns()
     for col in cols:
         if col not in df.columns:
@@ -187,6 +187,9 @@ def convert_openf1_bundle(bundle, event_info, round_number, year):
     if not laps_data:
         return pd.DataFrame(columns=get_part1_columns())
     df = pd.DataFrame(laps_data)
+    if "driver_number" in df.columns and "lap_number" in df.columns:
+        df = df.drop_duplicates(subset=["driver_number", "lap_number"])
+        df = df.sort_values(["driver_number", "lap_number"]).reset_index(drop=True)
     drivers = {d["driver_number"]: d for d in bundle.get("drivers", [])}
     assign_timing_and_driver_fields(df, drivers)
     assign_stints_and_sectors(df, bundle, drivers)
