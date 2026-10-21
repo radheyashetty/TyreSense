@@ -164,4 +164,54 @@ All models were evaluated on the **exact same 2024 validation windows** ($N=19,1
 - **Where Recurrent Neural Forecasters Excel**:
   - At medium and long horizons ($h=5$ and $h=10$), both GRU and LSTM strongly outperform all tabular and heuristic baselines (e.g., at $h=10$: GRU $1.248\text{ s}$ vs ROLLING $1.666\text{ s}$, Ridge $1.936\text{ s}$, XGBoost $1.958\text{ s}$).
 
+---
+
+## Part 5: EXP-9 Core Claim Audit & Stint Walkthrough
+
+### 1. PWE (Pit Window Error) Formula in Code
+From `src/claim_eval.py:10-15`:
+```python
+def compute_pwe(pred_life, actual_life, max_horizon=20):
+    """Compute Pit Window Error in laps, capping non-crossing forecasts at max_horizon."""
+    if actual_life is None or pd.isna(actual_life):
+        return np.nan
+    eff_pred = max_horizon if (pred_life is None or pd.isna(pred_life)) else float(pred_life)
+    return abs(eff_pred - float(actual_life))
+```
+Mathematically:
+$$\text{PWE} = |L_{\text{pred}} - L_{\text{true}}|$$
+where $L_{\text{true}}$ is the true cliff lap (from `stints.parquet:life_laps`), and $L_{\text{pred}}$ is the absolute stint lap predicted by each forecasting mode:
+- **FROZEN mode**: Evaluated strictly once at stint lap 2: $L_{\text{froz}} = 2 + f_c$, capped at $2 + 20 = 22$ if no crossing occurs.
+- **ROLLING mode**: Evaluated at current eval lap $t \in \{3, 5, 7, 10\}$: $L_{\text{roll}}(t) = t + r_c(t)$, capped at $t + 20$ if no crossing occurs.
+- **Model E mode**: Evaluated at current eval lap $t$: $L_{\text{mode\_e}}(t) = t + e_c(t)$ with online wear multiplier $k_t$.
+
+### 2. Five Validation Stints Walkthrough
+Five representative uncensored validation stints with lengths $\ge 15$ laps:
+| Stint ID | Driver | Tyre | True Cliff Lap | FROZEN Lap-2 Pred | ROLLING Lap 3 | ROLLING Lap 5 | ROLLING Lap 7 | ROLLING Lap 10 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| `2024_01_VER_2` | VER | HARD | **15** | 22 | 23 | 25 | 27 | 30 |
+| `2024_01_LEC_6` | LEC | HARD | **13** | **13** | 23 | 25 | 27 | **14** |
+| `2024_01_RUS_9` | RUS | HARD | **22** | **22** | 23 | 25 | 27 | 30 |
+| `2024_01_PER_12` | PER | SOFT | **16** | 22 | 23 | 25 | 27 | 30 |
+| `2024_01_SAI_14` | SAI | HARD | **17** | 22 | 23 | 25 | 27 | 30 |
+
+*Diagnostic Note*: In `2024_01_LEC_6`, FROZEN at lap 2 predicted exactly lap 13 ($L_{\text{true}}=13$). Early laps 3–7 pace adjustments delayed the ROLLING forecast, but by lap 10, ROLLING detected actual degradation and revised the predicted cliff to lap 14 (an error of only 1 lap).
+
+### 3. Paired EXP-9 Comparison Table (`reports/overnight/exp9_results.csv`)
+| Eval Lap | Effective $N$ | Censored Share | FROZEN PWE (laps) | ROLLING PWE (laps) | Model E PWE (laps) | Always-20 PWE | Always-Median PWE | ROLLING Adv. | Stint 95% CI | Cluster 95% CI |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **3** | 326 | 0.624 | 9.67 | 9.42 | 10.31 | 11.35 | 4.17 | +0.25 | [-0.11, 0.61] | [0.03, 0.47] |
+| **5** | 339 | 0.615 | 10.72 | 8.83 | 10.58 | 12.81 | 4.38 | +1.89 | [1.30, 2.50] | [1.26, 2.54] |
+| **7** | 346 | 0.610 | 11.82 | 8.22 | 10.51 | 14.31 | 4.36 | +3.60 | [2.86, 4.35] | [2.65, 4.42] |
+| **10** | 337 | 0.593 | 12.77 | 7.61 | 11.06 | 15.90 | 3.90 | +5.16 | [4.35, 5.99] | [3.74, 6.43] |
+
+### 4. Explanations & Scientific Caveats
+- **Why Effective $N$ Varies Per Stint Lap**:
+  1. Only stints reaching at least the current evaluation lap can be evaluated (`stint_length >= eval_lap`).
+  2. Stints are evaluated when true remaining life falls within the model's 20-lap horizon ($L_{\text{true}} - t \le 20$). As eval lap $t$ progresses from 3 to 7, more longer stints enter the $\le 20$-lap remaining horizon ($326 \to 339 \to 346$). By lap 10, shorter stints pit and exit the cohort ($346 \to 337$).
+- **Wording & Rigor**:
+  - The paired bootstrap evidence **suggests** (does not prove) that ROLLING updates provide a statistically significant reduction in PWE starting from stint lap 5 onwards (95% cluster CI $[1.26, 2.54]$ at lap 5, and $[3.74, 6.43]$ at lap 10).
+  - Note that `always_median` achieves the lowest uncapped PWE ($3.90\text{--}4.38\text{ laps}$) by exploiting the central tendency of compound lifetimes, highlighting that naive heuristic baselines can be competitive against point cliff estimates when stints exhibit high variance.
+
+
 
