@@ -285,6 +285,49 @@ All 7 unit and benchmark tests passed in 6.38s (`python -m pytest tests/test_app
 6. `test_empty_state_handling`: Verified clean handling when filter returns 0 stints (passed).
 7. `test_app_2025_test_lock`: Verified zero 2025 data is loaded and assertions trigger on simulated breach (passed).
 
+---
+
+## Part 8: Code Cleanup & Behavioral Invariance
+
+### 1. Results Pre-Cleanup Hashes
+- Computed SHA-256 for all 37 result artifacts across `reports/` and `runs/` prior to cleanup and logged to `reports/overnight/results_hashes_pre_cleanup.csv`.
+
+### 2. AST Dead Code & Unused Import Elimination
+- Scanned AST across `src/`, `app.py`, and `tests/`.
+- Removed clearly unused imports without altering behavior:
+  - `app.py`: Removed unused `pd`, `np`
+  - `src/app_data.py`: Removed unused `np`
+  - `src/app_forecast.py`: Removed unused `pd`, `torch`, `build_stint_features`, `compute_cliff_life`
+  - `src/runner_part_c.py`: Removed unused `time`, `Ridge`, `xgb`
+  - `src/runner_part_d.py`: Removed unused `json`
+  - `src/runner_part_e.py`: Removed unused `os`
+  - `src/features.py`: Removed unused `load_config`
+  - `src/uncertainty.py`: Removed unused `os`, `pd`, `load_config`, `create_gru_model`, `build_sequences_from_laps`
+
+### 3. Task Jargon Elimination
+- Replaced internal development jargon with plain descriptive prose:
+  - `src/openf1_convert.py:171`: Replaced `"Part 1 schema"` with `"39-column raw telemetry schema"`.
+  - `src/validate_raw.py:21, 51, 109`: Replaced `"Part 1 schema"` and `"Part 1 quality criteria"` with `"canonical raw schema"` and `"canonical raw data quality criteria"`.
+
+### 4. Deterministic Numerical Invariance Verification
+Reran cheap deterministic pipeline components after cleanup:
+- **Baseline GRU Val MAE**:
+  - $h=1$: **0.9932** (exact match to `runs/gru_main/metrics.json: 0.993232...`)
+  - $h=5$: **1.1139** (exact match to `runs/gru_main/metrics.json: 1.113859...`)
+  - $h=10$: **1.3697** (exact match to `runs/gru_main/metrics.json: 1.369650...`)
+  - *Result*: Matched to 4 decimal places bit-for-bit.
+
+### 5. Documented Class Exceptions (`AGENT_RULES.md`)
+Per `AGENT_RULES.md`, plain functions are mandatory except for `torch.nn.Module`. Two documented exceptions are maintained and listed in `README.md`:
+1. `src/train.py::StintSequenceDataset`: Subclass of `torch.utils.data.Dataset` required by PyTorch `DataLoader` for batching.
+2. `src/validate_raw.py::WarningHandler`: Subclass of `logging.Handler` required by the Python standard `logging` library.
+
+### 6. Stale Files Preserved for Provenance
+- `reports/races_old_part1.csv`
+- `reports/part1_old/`
+- `runs/invalid_final_2023_02/`
+
+
 
 
 

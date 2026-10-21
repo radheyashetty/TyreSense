@@ -1,6 +1,6 @@
-import numpy as np, pandas as pd, torch
-from src.features import eval_curve, predict_causal_baseline, build_stint_features
-from src.live import compute_cliff_life, update_k_factor
+import numpy as np
+from src.features import eval_curve, predict_causal_baseline
+from src.live import update_k_factor
 from src.clean import flag_spikes_causal
 
 

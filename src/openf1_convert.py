@@ -168,7 +168,7 @@ def assign_pit_and_race_control(df, bundle):
 
 
 def assemble_race_dataframe(df, event_info, round_number, year):
-    """Fill metadata and reorder columns to match the 39-column Part 1 schema."""
+    """Fill metadata and reorder columns to match the 39-column raw telemetry schema."""
     df["EventName"] = str(event_info.get("event_name", event_info.get("circuit_short_name", "Grand Prix")))
     df["Location"] = str(event_info.get("location", event_info.get("circuit_short_name", "Circuit")))
     df["RoundNumber"], df["Year"] = int(round_number), int(year)

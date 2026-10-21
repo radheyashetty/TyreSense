@@ -1,4 +1,4 @@
-import os, json, pandas as pd, numpy as np, torch
+import os, json, pandas as pd, torch
 from src.config import load_config
 from src.features import fit_baseline_curves
 from src.models import create_gru_model, create_lstm_model, create_rnn_model

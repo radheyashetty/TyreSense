@@ -18,7 +18,7 @@ class WarningHandler(logging.Handler):
 
 
 def get_part1_columns():
-    """Return the 39 expected column names from Part 1 schema."""
+    """Return the 39 expected column names from the canonical raw schema."""
     return ["Time", "Driver", "DriverNumber", "LapTime", "LapNumber", "Stint", "PitOutTime", "PitInTime",
             "Sector1Time", "Sector2Time", "Sector3Time", "Sector1SessionTime", "Sector2SessionTime",
             "Sector3SessionTime", "SpeedI1", "SpeedI2", "SpeedFL", "SpeedST", "IsPersonalBest", "Compound",
@@ -48,7 +48,7 @@ def find_failing_endpoint(warnings):
 
 
 def extract_race_data(session):
-    """Extract laps, weather, and event metadata matching Part 1 schema."""
+    """Extract laps, weather, and event metadata matching canonical telemetry schema."""
     laps = session.laps
     if laps is None or len(laps) == 0:
         return None
@@ -106,7 +106,7 @@ def check_race_completeness(df):
 
 
 def validate_race_dataframe(df, rcm_count=None, allow_missing_rcm=False):
-    """Validate extracted race dataframe against Part 1 quality criteria."""
+    """Validate extracted race dataframe against canonical raw data quality criteria."""
     if df is None or len(df) == 0:
         return False, "empty laps"
     if not set(get_part1_columns()).issubset(set(df.columns)):

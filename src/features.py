@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
-from src.download import load_config
 
 
 def fit_quadratic_curve(tyre_ages, lap_times, alpha_reg=1.0):
