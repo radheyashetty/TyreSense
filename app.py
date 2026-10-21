@@ -25,7 +25,7 @@ def load_app_data(config_path="config.yaml"):
 
 
 @st.cache_resource
-def load_cached_gru_model(checkpoint_path="runs/final_gru/checkpoint.pt"):
+def load_cached_gru_model(checkpoint_path="runs/gru_main/checkpoint.pt"):
     """Load trained GRU model for neural forecasting."""
     if not os.path.exists(checkpoint_path):
         return None

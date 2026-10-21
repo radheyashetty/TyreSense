@@ -129,7 +129,7 @@ def run_part_e():
     track_map = {t: i for i, t in enumerate(tr_laps["track_id"].unique())}
     compound_map = {c: i for i, c in enumerate(tr_laps["compound"].unique())}
 
-    ckpt = torch.load("runs/final_gru/checkpoint.pt", map_location="cpu", weights_only=False)
+    ckpt = torch.load("runs/gru_main/checkpoint.pt", map_location="cpu", weights_only=False)
     model = create_gru_model()
     model.load_state_dict(ckpt)
     enable_dropout_at_inference(model)

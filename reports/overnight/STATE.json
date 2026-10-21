@@ -18,8 +18,8 @@
     "timestamp": "2026-10-21T04:01:43.000000",
     "baselines_saved": "reports/baseline_table.csv",
     "ablations_saved": "reports/ablation.csv",
-    "final_gru_checkpoint": "runs/final_gru/checkpoint.pt",
-    "final_gru_metrics": "runs/final_gru/metrics.json"
+    "gru_main_checkpoint": "runs/gru_main/checkpoint.pt",
+    "gru_main_metrics": "runs/gru_main/metrics.json"
   },
   "PART_D": {
     "status": "COMPLETED",

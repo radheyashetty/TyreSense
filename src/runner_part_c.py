@@ -91,12 +91,12 @@ def train_all_recurrent_models(tr_loader, va_loader):
 
 def save_gru_metrics_and_weights(saved_gru, tr_loader, va_loader):
     """Save final GRU checkpoint and record training vs validation generalization gap."""
-    os.makedirs("runs/final_gru", exist_ok=True)
-    torch.save(saved_gru.state_dict(), "runs/final_gru/checkpoint.pt")
+    os.makedirs("runs/gru_main", exist_ok=True)
+    torch.save(saved_gru.state_dict(), "runs/gru_main/checkpoint.pt")
     tr_eval = evaluate_model(saved_gru, tr_loader)
     va_eval = evaluate_model(saved_gru, va_loader)
     gap = {k: va_eval[k] - tr_eval[k] for k in tr_eval}
-    with open("runs/final_gru/metrics.json", "w") as f:
+    with open("runs/gru_main/metrics.json", "w") as f:
         json.dump({"train": tr_eval, "val": va_eval, "gap": gap}, f, indent=2)
     return tr_eval, va_eval
 

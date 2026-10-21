@@ -98,7 +98,7 @@ All models were evaluated on the 2024 validation split with early stopping (pati
 - **Baseline Mean**: $h=1: 1.924\text{ s}, h=5: 2.012\text{ s}, h=10: 2.291\text{ s}$
 
 ### Final GRU Training & Generalization Gap
-- Saved to `runs/final_gru/checkpoint.pt` and `runs/final_gru/metrics.json`:
+- Saved to `runs/gru_main/checkpoint.pt` and `runs/gru_main/metrics.json`:
   - Train: $h=1: 0.473\text{ s}, h=5: 0.510\text{ s}, h=10: 0.563\text{ s}$
   - Val: $h=1: 0.827\text{ s}, h=5: 0.946\text{ s}, h=10: 1.165\text{ s}$
   - Generalization Gap: $h=1: +0.354\text{ s}, h=5: +0.436\text{ s}, h=10: +0.602\text{ s}$
@@ -209,7 +209,7 @@ Every audit FAIL item was inspected and verified with `grep -n` evidence:
 | `reports/gradflow.csv` | `8400404a25125f2264ce31a32a22eb223a17f198fe5c64ac1ef1ce6c45692e76` | 405 | Recurrent gradient flow ratios across lengths |
 | `reports/overnight/exp9_results.csv` | `501ab442a6b45bfd9dcd549171e9adf3652ee475bdbcdac64763b198dd301038` | 947 | Core claim PWE, paired & cluster CIs |
 | `reports/uncertainty_coverage.csv` | `979e9af24cd377b583807f76488cd37097fc549d5574b2950e4d1e3af2a0b350` | 239 | MC-Dropout calibration on real stints |
-| `runs/final_gru/metrics.json` | `d7f3fc1ad43211f0ac621cdd5f97b87fecd0021cea79d0decb15ad13cdbab115` | 373 | Final GRU train vs val generalization gap |
+| `runs/gru_main/metrics.json` | `d7f3fc1ad43211f0ac621cdd5f97b87fecd0021cea79d0decb15ad13cdbab115` | 373 | Final GRU train vs val generalization gap |
 | `reports/overnight/STATE.json` | `db57cc56555d8d2860efbafcad2269ec85ea2a5dc09c1a95b68f46f0189c4a0f` | 1,435 | Overnight run state tracker |
 
 ---
