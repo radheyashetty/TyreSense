@@ -154,7 +154,7 @@ def run_part_e():
     eval_p50, eval_true, eval_q = collect_split_quantiles(model, eval_laps, eval_stints, curves, g_curve, track_map, compound_map, lap=5)
     df_cov = evaluate_conformal_and_mc(eval_p50, eval_true, eval_q, quantiles, targets)
     save_conformal_results(df_cov, quantiles, cal_races, eval_races)
-    print("Part 6 completed! Saved coverage and conformal_quantiles.json")
+    print("Split-conformal evaluation completed! Saved coverage and conformal_quantiles.json")
     print(df_cov.to_string())
     return df_cov
 

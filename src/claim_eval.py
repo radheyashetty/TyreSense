@@ -8,11 +8,12 @@ from src.clean import flag_spikes_causal
 
 
 def compute_pwe(pred_life, actual_life, max_horizon=20):
-    """Compute Pit Window Error in laps, capping non-crossing forecasts at max_horizon."""
+    """Standardize PWE = |min(R_pred, H) - min(R_true, H)| (H=20, R=L-t)."""
     if actual_life is None or pd.isna(actual_life):
         return np.nan
-    eff_pred = max_horizon if (pred_life is None or pd.isna(pred_life)) else float(pred_life)
-    return abs(eff_pred - float(actual_life))
+    eff_pred = float(max_horizon) if (pred_life is None or pd.isna(pred_life)) else min(float(max_horizon), float(pred_life))
+    eff_true = min(float(max_horizon), float(actual_life))
+    return abs(eff_pred - eff_true)
 
 
 def forecast_stint_pace(stint_df, curves, global_curve, lap_idx, horizon=20):

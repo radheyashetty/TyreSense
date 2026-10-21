@@ -1,12 +1,12 @@
-# TyreSense: F1 Tyre Degradation Forecaster
+# TyreSense: F1 Pit-Stop Window Forecasting via Deep Recurrent Networks
 
-TyreSense is an applied deep learning project that forecasts Formula 1 tyre degradation and remaining usable life using only public telemetry (`FastF1` and `OpenF1`).
-
-Modern F1 race outcomes hinge on pit-stop strategy: determining when a tyre's pace falls off the **"degradation cliff"** ($+1.0\text{ s}$ slower than baseline for 2 consecutive laps from stint lap $\ge 4$). TyreSense mathematically isolates tyre degradation from fuel burn-off and trains sequence models (GRU, LSTM, RNN) to forecast lap times **20 laps ahead**.
+TyreSense is an empirical deep learning system for Formula 1 tire degradation modeling and pit-stop window forecasting. It processes **91 Grand Prix races** across the 2022, 2023, 2024, and locked 2025 hybrid era seasons (sourced from FastF1 and OpenF1 APIs).
 
 ---
 
-## 🏎️ Key Features
+## 🏎️ Core Scientific Architecture
+
+Modern F1 race outcomes hinge on pit-stop strategy: determining when a tyre's pace degrades past a critical threshold (the "tyre cliff", defined here as $+1.0\text{ s}$ over baseline). TyreSense evaluates heuristic baselines, tree regressors, and deep recurrent neural networks against rigorous temporal splits.
 
 - **Fuel Physics Correction**: Removes the speed gain caused by fuel consumption ($c = 0.03\text{ s/lap}$ scaled per circuit length):
   $$\text{lap\_time\_fc} = \text{lap\_time} - c \times (\text{total\_laps} - \text{lap\_number})$$
@@ -23,10 +23,11 @@ Modern F1 race outcomes hinge on pit-stop strategy: determining when a tyre's pa
 ## 📁 Repository Structure
 
 ```
-├── app.py                  # Streamlit interactive stint replay dashboard
-├── config.yaml             # Central configuration (paths, seeds, horizons, models)
-├── requirements.txt        # Pinned project dependencies
-├── AGENT_RULES.md          # Architectural constraints (<=200 lines/file, <=30 lines/func)
+TyreSense/
+├── data/
+│   ├── raw/                # 91 raw Parquet race telemetry files (FastF1 & OpenF1)
+│   ├── raw_excluded/       # 1 excluded wet race (Suzuka 2022)
+│   └── processed/          # Cleaned & fuel-corrected train, val, and locked splits
 ├── src/                    # Core source modules
 │   ├── download.py         # OpenF1/FastF1 telemetry ingestion & parquet export
 │   ├── clean.py            # Quality filters, attrition accounting & persistent cliff labels
@@ -40,13 +41,13 @@ Modern F1 race outcomes hinge on pit-stop strategy: determining when a tyre's pa
 │   ├── train.py            # Training loop with Huber loss & early stopping
 │   ├── live.py             # Online error-correction wear multiplier k
 │   ├── claim_eval.py       # Core claim PWE and bootstrap comparison
-│   ├── runner_part_c.py    # Multi-horizon comparison & baseline table generator
-│   ├── runner_part_d.py    # EXP-9 paired PWE & cluster bootstrap evaluation
-│   ├── runner_part_e.py    # Split-conformal calibration on 2024 validation races
+│   ├── eval_baselines.py   # Multi-horizon comparison & baseline table generator
+│   ├── eval_pwe.py         # EXP-9 standardized PWE & cluster bootstrap evaluation
+│   ├── eval_uncertainty.py # Split-conformal calibration on 2024 validation races
 │   ├── app_data.py         # App data loading and 2025 test lock enforcement
 │   ├── app_forecast.py     # Multi-model forward forecasting engine
 │   └── app_ui.py           # Plotly charts, responsive metric cards, and expanders
-├── tests/                  # Pytest test suite (130 tests collected)
+├── tests/                  # Pytest test suite (131 tests collected)
 ├── reports/                # Experimental outputs, baseline tables, and audit logs
 └── notes/                  # Engineering rationales and viva notes
 ```
@@ -70,13 +71,13 @@ python -m src.clean
 python -m src.train --epochs 25 --run-name gru_main --seed 42
 
 # Run full baseline & recurrent comparison (GRU, LSTM, RNN across 3 seeds; XGBoost, Ridge, Baselines)
-python -m src.runner_part_c
+python -m src.eval_baselines
 
 # Run EXP-9 Core Claim benchmark (FROZEN vs ROLLING vs Model E on 2024 validation)
-python -m src.runner_part_d
+python -m src.eval_pwe
 
 # Run split-conformal uncertainty calibration on 2024 races
-python -m src.runner_part_e
+python -m src.eval_uncertainty
 ```
 
 ### 3. Launch Interactive Dashboard
@@ -86,7 +87,7 @@ streamlit run app.py
 
 ### 4. Run Pytest Suite
 ```bash
-# Standard test suite (111 passed, 19 skipped in ~21s)
+# Standard test suite (112 passed, 19 skipped in ~22s)
 pytest
 
 # Data invariant validation suite (18 passed in ~35s)
@@ -101,20 +102,21 @@ pytest -m slow
 ## 📊 Empirical Findings & Honest Disclosures (R1, R2)
 
 1. **Multi-Horizon Forecast Comparison (`reports/baseline_table.csv`)**:
-   - **Horizon $h=1$**: Simple pace persistence and ROLLING baseline offset achieve the lowest MAE ($0.653\text{ s}$), beating GRU ($0.947\text{ s}$), LSTM ($0.955\text{ s}$), and XGBoost ($0.955\text{ s}$).
-   - **Horizons $h=5$ and $h=10$**: Recurrent neural networks decisively outperform all tabular and heuristic baselines (e.g., at $h=10$: LSTM $1.235\text{ s}$, GRU $1.248\text{ s}$ vs ROLLING $1.666\text{ s}$, Ridge $1.936\text{ s}$, XGBoost $1.958\text{ s}$).
+   - **Horizon $h=1$**: Simple pace persistence achieves the lowest MAE ($0.653\text{ s}$), beating GRU ($0.947\text{ s}$), LSTM ($0.955\text{ s}$), and XGBoost ($0.955\text{ s}$).
+   - **Horizons $h=5$ and $h=10$**: Recurrent neural networks outperform tabular and heuristic baselines (e.g., at $h=10$: LSTM $1.235\text{ s}$, GRU $1.248\text{ s}$ vs persistence $1.666\text{ s}$, Ridge $1.936\text{ s}$, XGBoost $1.958\text{ s}$).
 
-2. **Core Claim Benchmark (`reports/overnight/exp9_results.csv`)**:
-   - Dynamic ROLLING curve updates significantly outperform FROZEN curves on uncensored stints: ROLLING advantage of $+1.89\text{ laps}$ at Lap 5 (95% cluster CI $[1.26, 2.54]$) and $+5.16\text{ laps}$ at Lap 10 (95% cluster CI $[3.74, 6.43]$).
-   - An Always-Train-Median heuristic achieves a lower point PWE ($\approx 3.9\text{--}4.4\text{ laps}$) by capturing the central distribution of compound lives.
+2. **Core Claim Benchmark (`reports/overnight/exp9_official.csv`)**:
+   - Standardized PWE evaluates $N=345$ uncensored stints (clean length $\ge 10$) across all laps 3, 5, 7, 10.
+   - Dynamic ROLLING curve updates outperform FROZEN curves on uncensored stints: ROLLING advantage of $+1.62\text{ laps}$ at Lap 5 (95% cluster CI $[0.86, 2.37]$) and $+4.99\text{ laps}$ at Lap 10 (95% cluster CI $[3.56, 6.27]$). At Lap 3, advantage is $+0.14\text{ laps}$ with 95% cluster CI $[-0.14, 0.44]$ crossing zero.
+   - A naive Always-Train-Median heuristic achieves a lower point PWE ($\approx 4.2\text{--}4.9\text{ laps}$) by capturing the central distribution of compound lives.
 
 3. **Model E (Online Wear Multiplier $k$)**:
-   - Evaluated under the one-step-ahead update rule, $k$ dynamically adapts across **95.46%** of validation stints (median $k = 0.645$).
-   - *Negative Result Disclosed*: During early laps (laps 3–7), tire management flattens telemetry wear relative to the quadratic curve ($\Delta \text{act} < \Delta \text{base}$), shifting $k < 1.0$ and initially increasing PWE before catching up at Lap 10 (PWE 6.89 vs 7.11).
+   - Evaluated under the one-step-ahead update rule across 2024 validation stints.
+   - *Negative Result Disclosed*: During early laps (laps 2–8), telemetry degradation deltas are flatter than the quadratic curve, causing $k$ to collapse to the lower clamp ($k=0.5$) on 27.8% of validation stints. Consequently, Model E underperforms plain ROLLING (by $-0.57\text{ laps}$ at Lap 3, $-1.51$ at Lap 5, $-1.96$ at Lap 7, $-3.38$ at Lap 10).
 
 4. **Split-Conformal Calibration (`reports/conformal_quantiles.json`)**:
    - Evaluated across 21 independent 2024 validation races (10 calibration races, 11 evaluation races).
-   - Raw MC-dropout is severely underconfident (10.4% coverage at 80% nominal), whereas split-conformal calibration yields realistic bounds ($q = \pm 13.0\text{ laps}$ for 80% nominal coverage).
+   - Raw MC-dropout is severely underconfident (10.4% coverage at 80% nominal), whereas split-conformal calibration yields realistic bounds ($q = \pm 13.0\text{ laps}$ for 80% nominal coverage, with 66.3% measured coverage on evaluation races).
 
 ---
 
@@ -123,7 +125,7 @@ pytest -m slow
 ### AGENT_RULES.md Exceptions (Non-`nn.Module` Classes)
 Per `AGENT_RULES.md`, plain functions are mandatory except for `torch.nn.Module`. Two documented architectural exceptions are maintained to preserve standard library integration and existing test contracts:
 1. `src/train.py::StintSequenceDataset`: Subclass of `torch.utils.data.Dataset` required by PyTorch `DataLoader` for sequence batching.
-2. `src/validate_raw.py::WarningHandler`: Subclass of `logging.Handler` required by the Python standard `logging` library to capture FastF1 warnings.
+2. `src/validate_raw.py::WarningHandler`: Subclass of `logging.Handler` required by the Python standard `logging` library to capture FastF1 warnings during automated extraction without process termination.
 
 ### Stale Artifacts (Preserved for Provenance, Not Used)
 The following files are preserved for historical audit provenance and are never loaded by the current pipeline:

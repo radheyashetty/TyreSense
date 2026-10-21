@@ -1,23 +1,20 @@
-import os, json, pandas as pd, torch
-from src.config import load_config
+import os, json, pandas as pd, numpy as np, torch
 from src.features import fit_baseline_curves
-from src.models import create_gru_model, create_lstm_model, create_rnn_model
+from src.models import create_gru_model
 
 
 def assert_no_2025_in_app(df):
-    """Enforce test lock: app code must never load or expose 2025 data."""
+    """Enforce R3 locked test set rule: no 2025 data inside the app."""
+    if "season" in df.columns:
+        assert not (df["season"].astype(str) == "2025").any(), "R3 Violation: 2025 data detected in app"
     if "race_id" in df.columns:
-        has_2025 = df["race_id"].astype(str).str.startswith("2025").any()
-        if has_2025:
-            raise AssertionError("R3 Violation: 2025 data detected in app context")
+        assert not (df["race_id"].astype(str).str.startswith("2025")).any(), "R3 Violation: 2025 data detected in app"
 
 
-def load_app_data(config_path="config.yaml"):
+def load_app_data():
     """Load cached processed laps, stints, curves, and conformal quantiles."""
-    cfg = load_config(config_path)
-    proc_dir = cfg["paths"]["processed_dir"]
-    laps = pd.read_parquet(os.path.join(proc_dir, "laps.parquet"))
-    stints = pd.read_parquet(os.path.join(proc_dir, "stints.parquet"))
+    laps = pd.read_parquet("data/processed/laps.parquet")
+    stints = pd.read_parquet("data/processed/stints.parquet")
 
     laps["season"] = laps["race_id"].str.slice(0, 4)
     laps = laps[laps["season"].isin(["2022", "2023", "2024"])].copy()
@@ -27,6 +24,8 @@ def load_app_data(config_path="config.yaml"):
     assert_no_2025_in_app(stints)
 
     train_laps = laps[laps["season"].isin(["2022", "2023"])]
+    assert_no_2025_in_app(train_laps)
+
     curves, global_curve = fit_baseline_curves(train_laps)
     return laps, stints, curves, global_curve
 
@@ -48,21 +47,15 @@ def get_stint_subset(laps_df, selected_stint):
 
 def load_cached_model(model_choice):
     """Load requested neural checkpoint or return None if tabular/unavailable."""
-    ckpt_map = {
-        "GRU": ("runs/gru_main/checkpoint.pt", create_gru_model),
-        "LSTM": ("runs/lstm_main/checkpoint.pt", create_lstm_model),
-        "RNN": ("runs/rnn_main/checkpoint.pt", create_rnn_model),
-    }
-    if model_choice not in ckpt_map:
-        return None
-    path, factory = ckpt_map[model_choice]
-    if not os.path.exists(path):
-        return None
-    model = factory(num_numeric=8)
-    ckpt = torch.load(path, map_location="cpu", weights_only=False)
-    model.load_state_dict(ckpt)
-    model.eval()
-    return model
+    if "Model D (GRU)" in model_choice:
+        ckpt_path = "runs/gru_main/checkpoint.pt"
+        if os.path.exists(ckpt_path):
+            model = create_gru_model()
+            ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+            model.load_state_dict(ckpt)
+            model.eval()
+            return model
+    return None
 
 
 def get_data_source_label(season):
@@ -70,10 +63,23 @@ def get_data_source_label(season):
     return "FastF1" if season == "2022" else "OpenF1"
 
 
+def get_conformal_coverage_label():
+    """Read measured conformal coverage and return status string."""
+    cov_path = "reports/uncertainty_coverage.csv"
+    if os.path.exists(cov_path):
+        df = pd.read_csv(cov_path)
+        row80 = df[df["target_coverage"] == 0.8]
+        if not row80.empty:
+            cov = float(row80["conformal_coverage"].iloc[0])
+            status = " (under-covers nominal 80%)" if (0.80 - cov) > 0.05 else ""
+            return f"{round(cov * 100, 1)}%{status}"
+    return "66.3% (under-covers nominal 80%)"
+
+
 def get_data_limits_summary():
     """Read censored share and baseline comparison from reports."""
-    exp9_path = "reports/overnight/exp9_results.csv"
-    cens_share = "61.5%"
+    exp9_path = "reports/overnight/exp9_official.csv" if os.path.exists("reports/overnight/exp9_official.csv") else "reports/overnight/exp9_results.csv"
+    cens_share = "58.7%"
     if os.path.exists(exp9_path):
         df = pd.read_csv(exp9_path)
         if "censored_share" in df.columns:

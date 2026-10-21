@@ -156,7 +156,7 @@ def compile_and_save_baseline_table(rec_results, res_ridge, res_xgb, res_mean, r
 
 
 def run_all_part_c():
-    """Execute complete Part C/4 experiments and baseline generation."""
+    """Execute multi-horizon baseline model comparisons."""
     tr_laps = pd.read_parquet("data/processed/train_laps.parquet")
     va_laps = pd.read_parquet("data/processed/val_laps.parquet")
     assert_no_2025_data(tr_laps, "train_laps")

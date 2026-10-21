@@ -30,24 +30,21 @@ def get_base_curve_predictions(observed_df, curves, global_curve, horizon=20):
 
 
 def forecast_future_laps(observed_df, curves, global_curve, horizon=20, k=1.0, model_choice="Model E", model_obj=None):
-    """Generate multi-step forward degradation and lap time forecast."""
+    """Generate multi-step forward degradation and lap time forecast anchored to last observed lap."""
     curr_lap = int(observed_df["stint_lap"].max())
     early_laps = observed_df[observed_df["stint_lap"] <= 3]
     baseline_time = float(early_laps["lap_time_fc_s"].mean())
     fut_laps = np.arange(curr_lap + 1, curr_lap + horizon + 1)
     base_preds, observed_level = get_base_curve_predictions(observed_df, curves, global_curve, horizon)
-    offset = observed_df["lap_time_fc_s"].iloc[-1] - observed_level
+    last_obs = float(observed_df["lap_time_fc_s"].iloc[-1])
 
-    # ROLLING base forecast
-    roll_times = base_preds + offset
-    roll_deg = roll_times - baseline_time
-
+    delta_base = base_preds - observed_level
     if "Model A" in model_choice:
-        fut_times = base_preds + (baseline_time - base_preds[0])
+        fut_times = last_obs + delta_base
     elif "Model E" in model_choice or k != 1.0:
-        fut_times = baseline_time + k * roll_deg
+        fut_times = last_obs + k * delta_base
     else:
-        fut_times = roll_times
+        fut_times = last_obs + delta_base
     return fut_laps, fut_times, baseline_time
 
 

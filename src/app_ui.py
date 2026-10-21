@@ -91,10 +91,12 @@ def render_metrics_cards(observed, curr_lap, max_lap, est_fuel, rem_life, froz_c
 
 def render_data_limits_expander(data_source, cens_share):
     """Render expandable details regarding data sources and scientific limits."""
+    from src.app_data import get_conformal_coverage_label
+    cov_str = get_conformal_coverage_label()
     with st.expander("Data and limits"):
         st.markdown(f"""
         - **Data Provider**: Telemetry sourced from **{data_source}** (FastF1 for 2022; OpenF1 for 2023-2024).
-        - **Censored Stints**: Uncensored share is ~38.5%; **{cens_share}** of stints are right-censored (driver pit before cliff).
+        - **Censored Stints**: Uncensored share is ~41.3%; **{cens_share}** of stints are right-censored (driver pit before cliff).
         - **Heuristic Baseline**: Naive compound-median heuristic achieves competitive PWE on high-variance stints.
-        - **Uncertainty Calibration**: Conformal interval calibrated on 2024 races (coverage 80%, $\\pm 13$ laps).
+        - **Uncertainty Calibration**: Conformal interval calibrated on 2024 races: measured {cov_str} (nominal 80%, $\\pm 13$ laps).
         """)

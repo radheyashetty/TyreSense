@@ -1,0 +1,19 @@
+EXP-9 PWE TABLE DISCREPANCY EXPLANATION
+=======================================
+1. Earlier 'exp9_core_claim.csv':
+   - Used an uncurated subset of stints without length filtering.
+   - Evaluated FROZEN mode using raw remaining life from lap 2 instead of adjusting for elapsed laps (t).
+   - Dropped non-crossing forecasts as NaN rather than capping at horizon H=20.
+   - Reported Lap 3 PWE diff as -0.71 laps (claiming superiority) with wide CI [-2.71, 1.43] crossing zero.
+
+2. Overnight 'exp9_results.csv':
+   - Correctly capped non-crossing forecasts at 20 laps and adjusted elapsed laps for FROZEN.
+   - Filtered uncensored stints with condition `true_rem <= 20.0`, which caused effective N to vary across evaluation laps (N=326 at lap 3, 339 at lap 5, 346 at lap 7, 337 at lap 10).
+
+3. Official Standardization ('exp9_official.csv'):
+   - Standardized formula: PWE = |min(R_pred, H) - min(R_true, H)| with H = 20 laps, where R = L - t.
+   - Fixed uncensored cohort: All 2024 validation stints with observed clean length >= 10 laps (N = 345).
+   - Cohort size N = 345 is identically evaluated across all evaluation laps (3, 5, 7, 10).
+   - Evaluated Modes: FROZEN (t=2), ROLLING, Model E (adaptive k), Always-20, Always-Train-Median.
+   - Paired bootstrap CIs: 1,000 resamples for both stint-level and 21 race clusters.
+   - Censored cohort (length >= 10, N = 491): Evaluated survival consistency rate (pred_rem >= observed_survival) alongside Always-20 baseline.

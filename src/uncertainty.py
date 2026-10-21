@@ -63,7 +63,7 @@ def compute_coverage_summary(p50, p10, p90, true_lives, scale_s):
 
 def run_exp10(config_path="config.yaml"):
     """Execute EXP-10 MC-dropout uncertainty calibration on real validation stints."""
-    from src.runner_part_e import run_part_e
+    from src.eval_uncertainty import run_part_e
     df_cov = run_part_e()
     row_80 = df_cov[df_cov["target_coverage"] == 0.80].iloc[0]
     return {

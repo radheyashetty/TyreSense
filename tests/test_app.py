@@ -7,6 +7,7 @@ from app import (
     plot_stint_replay,
 )
 from src.app_data import assert_no_2025_in_app
+from src.app_forecast import compute_live_k
 
 
 def test_app_first_render_and_data_load_time():
@@ -100,3 +101,26 @@ def test_app_2025_test_lock():
     breach_df = pd.DataFrame({"race_id": ["2025_01", "2024_01"]})
     with pytest.raises(AssertionError, match="R3 Violation: 2025 data detected"):
         assert_no_2025_in_app(breach_df)
+
+
+def test_forecast_continuity_20_val_stints():
+    """Verify first step of Model A and E differs from last observed by less than 0.5s across 20 seeded val stints."""
+    laps, stints, curves, g_curve = load_app_data()
+    val_laps = pd.read_parquet("data/processed/val_laps.parquet")
+    val_stints = sorted(val_laps["stint_id"].unique())
+    rng = np.random.default_rng(42)
+    sampled = rng.choice(val_stints, size=20, replace=False)
+
+    for sid in sampled:
+        sub = get_stint_subset(laps, sid)
+        if len(sub) < 5:
+            continue
+        obs = sub[sub["stint_lap"] <= 5]
+        last_obs = float(obs["lap_time_fc_s"].iloc[-1])
+        k = compute_live_k(sub, 5, curves, g_curve)
+        _, fut_a, _ = forecast_future_laps(obs, curves, g_curve, model_choice="Model A")
+        _, fut_e, _ = forecast_future_laps(obs, curves, g_curve, k=k, model_choice="Model E")
+        diff_a = abs(fut_a[0] - last_obs)
+        diff_e = abs(fut_e[0] - last_obs)
+        assert diff_a < 0.5, f"Model A first step jump {diff_a} >= 0.5s on {sid}"
+        assert diff_e < 0.5, f"Model E first step jump {diff_e} >= 0.5s on {sid}"
