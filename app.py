@@ -81,7 +81,8 @@ def main():
     st.set_page_config(page_title="TyreSense", layout="wide")
     st.title("TyreSense: F1 Tyre-Life Forecaster")
     laps, stints, curves, global_curve = load_app_data()
-    season, selected_stint, session, model_choice, n_avail = render_sidebar_filters(laps)
+    season, selected_stint, model_choice, n_avail = render_sidebar_filters(laps)
+    session = "Main Race"
 
     if n_avail == 0 or selected_stint is None:
         st.warning("No stints match the selected filter combination. Please select a different driver or tyre compound.")

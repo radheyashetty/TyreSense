@@ -50,7 +50,6 @@ def render_sidebar_filters(laps):
     selected_track = st.sidebar.selectbox("Choose Circuit", tracks)
     track_laps = season_laps[season_laps["track_id"] == selected_track]
 
-    session = st.sidebar.selectbox("Session Type", ["Main Race", "Qualifying", "Practice"])
     drivers = sorted(track_laps["driver"].unique())
     selected_driver = st.sidebar.selectbox("Choose Driver", drivers)
     driver_laps = track_laps[track_laps["driver"] == selected_driver]
@@ -63,7 +62,7 @@ def render_sidebar_filters(laps):
     selected_stint = st.sidebar.selectbox("Select Stint", stints_available) if len(stints_available) > 0 else None
     models = ["Model E (Online Adaptive)", "Model D (GRU)", "Model A (Baseline Curve)", "Ridge", "XGBoost", "LSTM", "RNN"]
     model_choice = st.sidebar.radio("Forecasting Model", models)
-    return selected_season, selected_stint, session, model_choice, len(stints_available)
+    return selected_season, selected_stint, model_choice, len(stints_available)
 
 
 COMPOUND_TRAIN_MEDIANS = {"HARD": 14, "MEDIUM": 11, "SOFT": 9}
