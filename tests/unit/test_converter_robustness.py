@@ -86,9 +86,14 @@ def test_cache_corrupted_json_returns_none(tmp_path):
     assert read_cached_json(str(corrupt_file)) is None
 
 
+def noop_wait(s):
+    """No-op wait function for testing without sleep delays."""
+    return None
+
+
 def test_process_openf1_race_handles_errors_gracefully(tmp_path):
     """Pipeline fails race with clear reason rather than saving bad parquet."""
     event = {"Year": 2023, "RoundNumber": 1, "session_key": "invalid_key"}
-    rec = process_openf1_race(event, str(tmp_path / "raw"), str(tmp_path / "cache"), wait_fn=lambda s: None)
+    rec = process_openf1_race(event, str(tmp_path / "raw"), str(tmp_path / "cache"), wait_fn=noop_wait)
     assert rec["status"].startswith("failed")
     assert not os.path.exists(tmp_path / "raw" / "race_2023_01.parquet")

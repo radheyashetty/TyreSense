@@ -327,6 +327,46 @@ Per `AGENT_RULES.md`, plain functions are mandatory except for `torch.nn.Module`
 - `reports/part1_old/`
 - `runs/invalid_final_2023_02/`
 
+---
+
+## Part 9: Verification Freeze & Sign-Off
+
+### 1. Test Suite Execution Summary
+Ran full test suite under `C:\Python314\python.exe`:
+- **Default Test Suite**: `111 passed, 19 skipped in 21.02s` (`python -m pytest`)
+- **Data Invariant Suite**: `18 passed, 112 deselected in 34.63s` (`python -m pytest -m data`)
+- **Slow Property Suite**: `1 passed, 129 deselected in 49.72s` (`python -m pytest -m slow`)
+- **Total Test Collection**: 130 tests across unit, data invariant, and property suites; 0 failures.
+
+### 2. Full Codebase AST Verification (`AGENT_RULES.md`)
+Automated AST scan over all 63 Python files in `src/`, `checks/`, `tests/`, and `app.py`:
+- **Files $\le 200$ Lines**: 63 / 63 passed (100%)
+- **Functions $\le 30$ Lines**: 100% passed (0 functions exceed 30 lines)
+- **Zero Lambdas**: 100% passed (0 lambda expressions present)
+
+### 3. Data Integrity & Bitwise Hashes (R4)
+- Verified all 92 raw telemetry parquets in `data/raw/` and `data/raw_excluded/` against `reports/testing/raw_hashes_before.csv`.
+- **Result**: 100% bitwise SHA-256 match. Zero parquet modifications.
+
+### 4. Locked Test Set Enforcement (R3)
+- Confirmed `runs/final/` does NOT exist.
+- Confirmed zero 2025 metric or evaluation result files exist.
+- Confirmed Streamlit app reachable race set contains strictly 59 races from seasons 2022, 2023, 2024 (zero 2025 races reachable).
+
+### 5. Report Number Audit (R1)
+- Automated extraction of all 631 numerical tokens in `FINAL_RUN_REPORT.md` against files in `reports/` and `runs/`.
+- **Result**: 100% of reported numbers trace directly to verifiable output artifacts and logs.
+
+### 6. Summary of Blockers, Reductions & Suspicious Findings
+- **Blockers**: None. All 9 parts completed successfully within budget.
+- **Reductions / Adjustments**:
+  - Playwright was not installed in Python 3.14 (`ModuleNotFoundError`). Per Rule R6 ("no new libraries") and prompt instructions, recorded **NOT CAPTURED** without speculative visual claims.
+- **Suspicious Findings & Negative Results Disclosed (R2)**:
+  1. *Early-Stint Multiplier Delays*: Online wear multiplier $k$ decreases early in stints ($k \approx 0.645$) due to driver tire management, causing Model E PWE to lag behind ROLLING until Lap 10.
+  2. *Heuristic Dominance*: The naive compound-median baseline achieves lower point PWE ($3.9\text{--}4.4\text{ laps}$) than polynomial extrapolation ($7.6\text{--}9.4\text{ laps}$), proving that point-cliff estimates have high variance on right-censored telemetry.
+  3. *Raw MC-Dropout Epistemic Failure*: Raw MC-dropout achieves only 10.4% coverage at nominal 80%, proving weight jitter alone cannot quantify real race strategy uncertainty without split-conformal calibration.
+
+
 
 
 

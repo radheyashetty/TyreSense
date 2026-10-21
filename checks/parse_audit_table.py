@@ -19,9 +19,9 @@ def parse_audit_fail_rows(filepath="AUDIT_REPORT_1.md"):
     return fail_rows
 
 
-def get_item_evidence(cid):
-    """Retrieve verified file:line evidence or command output for an audit ID."""
-    ev = {
+def get_item_evidence_part1():
+    """Retrieve verified file:line evidence for A-D audit IDs."""
+    return {
         "A1": "requirements.txt:11 (torch pinned) & src/clean.py:141",
         "A2": "README.md:65 (documented CLI commands)",
         "A4": ".gitignore:1-15 (covers data, caches, *.pt) & git clean",
@@ -33,7 +33,14 @@ def get_item_evidence(cid):
         "D4": "reports/ablation.csv:1-35 (ablation records saved)",
         "D5": "reports/overnight/exp9_results.csv:1-5 (disclosures)",
         "D6": "reports/baseline_table.csv:1-13 (Models A, B, C, D evaluated)",
-        "D7": "runs/gru_main/metrics.json:1-15 (generalization gap)",
+        "D7": "runs/gru_main/metrics.json:1-15 (generalization gap)"
+    }
+
+
+def get_item_evidence(cid):
+    """Retrieve verified file:line evidence or command output for an audit ID."""
+    ev = get_item_evidence_part1()
+    ev.update({
         "E4": "reports/uncertainty_coverage.csv:1-6 (real stints)",
         "E5": "app.py:168 (pit window hidden before lap 3)",
         "E6": "reports/overnight/exp9_results.csv:1-5 (paired N)",
@@ -48,7 +55,7 @@ def get_item_evidence(cid):
         "H4": "README.md:95 (academic credit given to FastF1, OpenF1)",
         "H5": "reports/overnight/STAGE_REPORT.md:200 (AI assistance)",
         "H6": "notes/explain.md:1-200 (factual task explanations)"
-    }
+    })
     return ev.get(cid, "Evidence verified in reports/overnight/")
 
 
