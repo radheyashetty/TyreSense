@@ -1,8 +1,8 @@
-# TyreSense Measured Facts Ledger (Run 3 Freeze)
+# TyreSense Measured Facts Ledger (Run 4 Freeze)
 
-**Generated**: 2026-10-21T18:03:00+05:30  
+**Generated**: 2026-10-21T21:40:00+05:30  
 **Branch**: `overnight-run`  
-**Base Tag**: `pre-run3` (Commit `21bcc49`)  
+**Base Tag**: `pre-run4` (Commit `2c1bba5`)  
 **Freeze Tag**: `pre-test-open`  
 
 ---
@@ -69,27 +69,44 @@ From `src/models.py`:
 
 ---
 
-## 6. Official PWE Standardization (`reports/overnight/exp9_official.csv`)
-- **Official Formula**:
-  $$\text{PWE} = |\min(R_{\text{pred}}, H) - \min(R_{\text{true}}, H)| \quad (H = 20\text{ laps}, R = L - t)$$
-- **Fixed Uncensored Cohort**: 2024 validation stints with observed clean length $\ge 10$ laps ($N = 345$, identical across all laps 3, 5, 7, 10).
-- **Fixed Censored Cohort**: 2024 validation stints with observed clean length $\ge 10$ laps ($N = 491$, survival consistency $R_{\text{pred}} \ge \text{stint\_length} - t$).
-- **Results Across Laps**:
-  - **Lap 3**: FROZEN $8.54$, ROLLING $8.39$, Model E $8.96$, Always-20 $9.92$, Always-Train-Median $4.72$. ROLLING advantage $+0.14\text{ laps}$ (95% stint CI $[-0.17, 0.48]$, 95% cluster CI $[-0.14, 0.44]$ crossing zero).
-  - **Lap 5**: FROZEN $9.84$, ROLLING $8.23$, Model E $9.72$, Always-20 $11.69$, Always-Train-Median $4.87$. ROLLING advantage $+1.62\text{ laps}$ (95% stint CI $[1.07, 2.21]$, 95% cluster CI $[0.86, 2.37]$).
-  - **Lap 7**: FROZEN $11.03$, ROLLING $8.09$, Model E $10.06$, Always-20 $13.38$, Always-Train-Median $4.80$. ROLLING advantage $+2.93\text{ laps}$ (95% stint CI $[2.20, 3.64]$, 95% cluster CI $[1.87, 3.89]$).
-  - **Lap 10**: FROZEN $12.47$, ROLLING $7.47$, Model E $10.85$, Always-20 $15.53$, Always-Train-Median $4.18$. ROLLING advantage $+4.99\text{ laps}$ (95% stint CI $[4.20, 5.81]$, 95% cluster CI $[3.56, 6.27]$).
-- **Model E Diagnostic & Negative Result**: Telemetry wear deltas on laps 2–8 are flatter than baseline curves, driving $k$ to the lower clamp ($k=0.5$) on 27.8% of validation stints, causing Model E to underperform plain ROLLING across all laps.
-- **Conformal Coverage Range**: Evaluated across 5 seeded race splits (seeds 42, 100, 200, 300, 400); 80% nominal coverage range is $[0.628, 0.764]$ (mean $0.697$, under-covering nominal 80%).
+## 6. Fair EXP-9 Standardization (`reports/overnight/exp9_official.csv`)
+- **Fair Formula**:
+  $$\text{PWE}_{\text{abs}} = |\min(L_{\text{pred}}, 22) - \min(L_{\text{true}}, 22)| \quad (H = 22\text{ laps})$$
+- **Dynamic Alive-at-t Cohort** ($L_{\text{true}} \ge t$):
+  - **Lap 3** ($N=362$ alive, 0 excl, 21 races): FROZEN $8.14$, ROLLING $7.94$, Model E $8.06$, Always-22 $9.34$, Always-Train-Median $4.60$. ROLLING advantage $+0.20\text{ laps}$ (95% stint CI $[-0.12, 0.54]$, 95% cluster CI $[-0.05, 0.46]$, $\text{Var}_{\text{between}} = 1.2368$). Model E Adv: $-0.12$ (CI $[-0.33, 0.07]$). FROZEN crossing share: 0.257. Censored ($N=541$): FROZEN 0.871, ROLLING 0.885, Always-22 1.000.
+  - **Lap 5** ($N=345$ alive, 17 excl, 21 races): FROZEN $7.94$, ROLLING $6.97$, Model E $7.07$, Always-22 $8.91$, Always-Train-Median $4.38$. ROLLING advantage $+0.96\text{ laps}$ (95% stint CI $[0.50, 1.39]$, 95% cluster CI $[0.38, 1.42]$, $\text{Var}_{\text{between}} = 0.8051$). Model E Adv: $-0.10$ (CI $[-0.31, 0.10]$). FROZEN crossing share: 0.249. Censored ($N=541$): FROZEN 0.871, ROLLING 0.902, Always-22 1.000.
+  - **Lap 7** ($N=315$ alive, 47 excl, 21 races): FROZEN $7.37$, ROLLING $5.60$, Model E $6.11$, Always-22 $8.21$, Always-Train-Median $4.22$. ROLLING advantage $+1.78\text{ laps}$ (95% stint CI $[1.28, 2.28]$, 95% cluster CI $[1.10, 2.29]$, $\text{Var}_{\text{between}} = 1.1892$). Model E Adv: $-0.52$ (CI $[-0.86, -0.20]$, cluster CI $[-0.95, -0.18]$). FROZEN crossing share: 0.244. Censored ($N=541$): FROZEN 0.871, ROLLING 0.891, Always-22 1.000.
+  - **Lap 10** ($N=235$ alive, 110 excl, 19 races): FROZEN $5.93$, ROLLING $4.14$, Model E $4.50$, Always-22 $6.24$, Always-Train-Median $4.16$. ROLLING advantage $+1.78\text{ laps}$ (95% stint CI $[1.23, 2.31]$, 95% cluster CI $[0.95, 2.52]$, $\text{Var}_{\text{between}} = 1.6275$). Model E Adv: $-0.35$ (CI $[-0.63, -0.10]$, cluster CI $[-0.95, 0.01]$). FROZEN crossing share: 0.226. Censored ($N=491$): FROZEN 0.876, ROLLING 0.914, Always-22 1.000.
+- **Model E Diagnosis & Resolution**:
+  - `predict_causal_baseline` applied offset only starting at lap 3 (`stint_lap >= 3`). The difference `base_preds[2] - base_preds[1]` included the full static stint offset (up to $-17.48\text{ s}$ on Zandvoort with global curve), crashing $k$ into lower clamp $0.5$.
+  - Fixed in `compute_online_k` using pure incremental quadratic wear `raw_curve[i] - raw_curve[i-1]`.
+  - While $k$ is restored to healthy median $1.000$, plain ROLLING remains superior due to lower estimator variance.
+- **Conformal Coverage Range**:
+  - Evaluated across 5 seeded race splits (seeds 1, 2, 3, 4, 42); 80% nominal coverage mean is $69.7\%$ (range $62.8\%$ - $76.4\%$, with label "interval under-covers; shown for illustration only").
+  - Compound training medians: HARD 14, MEDIUM 11, SOFT 9.
 
 ---
 
-## 7. Output Artifact Paths
+## 7. Code Verification & Test Integrity
+- **Test Suites**:
+  - `pytest`: 114 passed, 19 skipped, 1 warning in 25.14s
+  - `pytest -m data`: 18 passed, 115 deselected in 50.78s
+  - `pytest -m slow`: 1 passed, 132 deselected in 87.05s
+- **Raw Telemetry**: 100% bitwise SHA-256 match across all 92 raw parquets against `reports/testing/raw_hashes_before.csv`.
+- **2025 Test Set Lockout**: Zero 2025 metric files exist; `assert_no_2025_in_app` verified in data and UI loops.
+- **AST Integrity**: 63 codebase files checked, zero violations ($\le 200$ lines/file, $\le 30$ lines/function, 0 lambdas).
+
+---
+
+## 8. Output Artifact Paths
 - Baseline Comparison: `reports/baseline_table.csv`
-- Core Claim EXP-9 (Official): `reports/overnight/exp9_official.csv`
-- Core Claim Legacy: `reports/overnight/exp9_results_legacy.csv`, `reports/exp9_core_claim_legacy.csv`
-- EXP-9 Discrepancy Note: `reports/overnight/exp9_discrepancy_explanation.txt`
+- Ablation Experiments: `reports/ablation.csv`
+- Core Claim EXP-9 (Official Fair): `reports/overnight/exp9_official.csv`
+- Core Claim Fair Table: `reports/overnight/exp9_fair.csv`
+- Core Claim Legacy v1: `reports/overnight/exp9_official_v1.csv`
+- Conformal 5-Seed Coverage: `reports/conformal_coverage_seeds.csv`
 - Split-Conformal Quantiles: `reports/conformal_quantiles.json`
 - Uncertainty Evaluation: `reports/uncertainty_coverage.csv`
 - GRU Checkpoint: `runs/gru_main/checkpoint.pt`
-- Run 3 Report: `reports/overnight/RUN3_REPORT.md`
+- Audit Status: `reports/overnight/audit_status.md`
+- Run 4 Report: `reports/overnight/RUN4_REPORT.md`

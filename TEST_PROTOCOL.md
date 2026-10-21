@@ -35,7 +35,7 @@ Uncertainty intervals will evaluate the pre-fitted split-conformal quantiles fro
 
 ## 4. Evaluation Metrics
 1. **Multi-Horizon Lap Time MAE**: Measured at $h = 1, 5, 10$ laps on 2025 test sliding windows for GRU, LSTM, RNN, XGBoost, Ridge, and persistence.
-2. **EXP-9 Core Claim PWE**: Standardized Pit Window Error $|\min(R_{\text{pred}}, 20) - \min(R_{\text{true}}, 20)|$ measured on uncensored 2025 stints at evaluation laps 3, 5, 7, 10.
+2. **EXP-9 Core Claim Fair PWE**: Absolute Pit Window Error $PWE_{\text{abs}} = |\min(L_{\text{pred}}, 22) - \min(L_{\text{true}}, 22)|$ with common absolute cap at Lap 22, measured on dynamic alive-at-$t$ cohorts ($L_{\text{true}} \ge t$) of uncensored 2025 stints at evaluation laps 3, 5, 7, 10 with paired 95% stint and cluster bootstrap confidence intervals, alongside survival-consistency rates on right-censored stints.
 3. **Conformal Empirical Coverage**: Measured on uncensored 2025 stints against the 5 nominal coverage levels.
 
 ---
