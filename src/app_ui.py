@@ -60,7 +60,7 @@ def render_sidebar_filters(laps):
 
     stints_available = sorted(filtered["stint_id"].unique())
     selected_stint = st.sidebar.selectbox("Select Stint", stints_available) if len(stints_available) > 0 else None
-    models = ["Model E (Online Adaptive)", "Model D (GRU)", "Model A (Baseline Curve)", "Ridge", "XGBoost", "LSTM", "RNN"]
+    models = ["Model E (Online Adaptive)", "Model D (GRU)", "Model A (Baseline Curve)", "Model C (XGBoost)"]
     model_choice = st.sidebar.radio("Forecasting Model", models)
     return selected_season, selected_stint, model_choice, len(stints_available)
 
