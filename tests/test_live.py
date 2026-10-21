@@ -48,6 +48,7 @@ def test_k_moves_toward_true_wear_rate():
 
     print(f"Final k after 8 laps: {k:.3f}")
     assert 0.5 <= k <= 2.0
+    assert abs(k - true_k) < abs(1.0 - true_k)
 
 
 def test_model_e_differs_from_rolling_on_accelerated_wear():

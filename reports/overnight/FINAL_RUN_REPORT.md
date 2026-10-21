@@ -85,3 +85,48 @@ Command: `git diff pre-final-run -- tests/`
 | **H6** | Syllabus map in report; explicit statement that Unit 4 (CNNs) is not covered | **Major** | **FIXED** | `notes/explain.md:1-200 (factual task explanations)` |
 
 *Note*: Verified notes/explain.md contains 0 invented syllabus mappings; all tasks reflect purely technical rationales.
+
+---
+
+## Part 3: Model E (Online Wear Multiplier Update)
+
+### 1. One-Step-Ahead Formulation
+Redefined the online adaptation error in `src/claim_eval.py` as one-step-ahead prediction:
+$$\text{forecast}_t = \text{act}_{t-1} + k_{t-1} \cdot (\text{base}_t - \text{base}_{t-1})$$
+$$e_t = \text{act}_t - \text{forecast}_t$$
+Retained standard normalization, smoothing over 3 laps, bounds $[0.5, 2.0]$, guard at `lap >= 3`, and causal spike freeze. Parameters were not retuned.
+
+### 2. Unit Tests
+- Restored assertion in `tests/test_live.py:test_k_moves_toward_true_wear_rate` (`assert abs(k - true_k) < abs(1.0 - true_k)`): **PASSED** (Final $k = 1.410$ vs true $k=1.5$).
+- Added unit test `tests/test_live.py:test_model_e_differs_from_rolling_on_accelerated_wear`: **PASSED**.
+- Pytest suite: `4 passed in 2.65s` (`python -m pytest tests/test_live.py`).
+
+### 3. Empirical Behavior on 2024 Validation Stints ($N=903$)
+- **Stints Evaluated (length $\ge 4$)**: 903
+- **Share of Stints with $|k - 1| > 0.05$**: **95.46%** (862 / 903 stints)
+- **Final $k$ Distribution**:
+  - Mean: **0.6872**
+  - Std Dev: **0.2039**
+  - Min: **0.5000**
+  - Max: **1.7995**
+  - Percentiles:
+    - $P_{10}$: **0.5000**
+    - $P_{25}$: **0.5000**
+    - $P_{50}$ (Median): **0.6447**
+    - $P_{75}$: **0.7892**
+    - $P_{90}$: **0.9707**
+
+### 4. EXP-9 PWE Comparison on Uncensored 2024 Validation Stints
+Evaluated on uncensored stints at laps 3, 5, 7, 10:
+| Stint Lap | Effective $N$ | FROZEN PWE (laps) | ROLLING PWE (laps) | Model E PWE (laps) |
+| :---: | :---: | :---: | :---: | :---: |
+| **Lap 3** | 362 | 7.51 | 7.26 | 7.80 |
+| **Lap 5** | 362 | 7.51 | 6.52 | 7.37 |
+| **Lap 7** | 362 | 7.51 | 6.62 | 6.82 |
+| **Lap 10** | 345 | 7.30 | 7.11 | 6.89 |
+
+### 5. Scientific Findings & Honest Disclosure (R2)
+- In the initial run, Model E was inactive ($k \equiv 1.0$) because $g_t$ was defined as the cumulative baseline difference from lap 0 rather than step-by-step lap delta.
+- With the one-step-ahead update rule, $k$ is fully active across 95.46% of stints.
+- Negative result disclosed: in early laps (laps 3-7), drivers manage tire pace, making step-to-step lap time degradation flatter than the unconditional quadratic curve ($\Delta \text{act} < \Delta \text{base}$). This shifts $k$ downward (median $0.645$), causing Model E to extrapolate lower future wear and overestimate tire life, leading to slightly worse PWE than ROLLING early in the stint. By Lap 10, when real degradation begins, Model E catches up and outperforms ROLLING (PWE 6.89 vs 7.11).
+

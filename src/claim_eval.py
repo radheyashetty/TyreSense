@@ -51,14 +51,14 @@ def simulate_modes_at_lap(stint_df, curves, global_curve, target_lap, threshold_
     # Model E: online k-update up to target_lap
     k, k_hist = 1.0, []
     base_preds = predict_causal_baseline(stint_df, curves, global_curve)
-    for i in range(target_lap):
+    for i in range(1, target_lap):
         s_lap = int(stint_df["stint_lap"].iloc[i])
         act_t = float(stint_df["lap_time_fc_s"].iloc[i])
-        b_t = float(base_preds[i])
-        g_t = float(act_t - b_t)
+        prev_act = float(stint_df["lap_time_fc_s"].iloc[i - 1])
+        delta_b = float(base_preds[i] - base_preds[i - 1])
         spike = flag_spikes_causal(stint_df.iloc[: i + 1])
         if s_lap >= 3:
-            k, k_hist = update_k_factor(k, k_hist, act_t, b_t, g_t, spike)
+            k, k_hist = update_k_factor(k, k_hist, act_t, prev_act, delta_b, spike)
 
     mode_e_deg = k * roll_deg
     mode_e_life = compute_cliff_life(mode_e_deg, threshold_s)
