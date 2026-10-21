@@ -213,5 +213,32 @@ Five representative uncensored validation stints with lengths $\ge 15$ laps:
   - The paired bootstrap evidence **suggests** (does not prove) that ROLLING updates provide a statistically significant reduction in PWE starting from stint lap 5 onwards (95% cluster CI $[1.26, 2.54]$ at lap 5, and $[3.74, 6.43]$ at lap 10).
   - Note that `always_median` achieves the lowest uncapped PWE ($3.90\text{--}4.38\text{ laps}$) by exploiting the central tendency of compound lifetimes, highlighting that naive heuristic baselines can be competitive against point cliff estimates when stints exhibit high variance.
 
+---
+
+## Part 6: Split-Conformal Uncertainty Calibration
+
+### 1. Methodology
+- **Split Design**: All 21 non-wet 2024 validation races were partitioned strictly **by race** using a fixed random seed (`seed=42`):
+  - **Calibration Half (10 races)**: `2024_19`, `2024_13`, `2024_18`, `2024_24`, `2024_15`, `2024_17`, `2024_08`, `2024_07`, `2024_11`, `2024_04`
+  - **Evaluation Half (11 races)**: `2024_01`, `2024_20`, `2024_06`, `2024_14`, `2024_23`, `2024_03`, `2024_05`, `2024_22`, `2024_02`, `2024_16`, `2024_10`
+  - *Data Integrity Confirmation*: **Both calibration and evaluation halves are strictly 2024 validation races**. No 2022-2023 training data was mixed, and no 2025 data was touched.
+- **Quantile Computation**: On the calibration half, absolute residual errors $R_i = |Y_i - \hat{Y}_i|$ of predicted usable remaining life were computed at stint lap 5. Exact empirical conformal quantiles $\hat{q}_{1-\alpha}$ were calculated using finite-sample correction: $\min\left(1.0, \frac{\lceil (n+1)(1-\alpha) \rceil}{n}\right)$.
+- **Removal of Stale Claims**: The arbitrary grid-search multiplier $s=4.0$ from prior drafts was completely eliminated and replaced by mathematically principled split-conformal calibration.
+
+### 2. Coverage and Width Evaluation (`reports/uncertainty_coverage.csv`)
+Evaluated on the independent 11-race evaluation split:
+| Target Coverage ($1-\alpha$) | Conformal Quantile $q$ (laps) | Raw MC-Dropout Coverage | Raw MC Width (laps) | Conformal Coverage | Conformal Width (laps) |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **50%** | **7.0** | 9.2% | 1.04 | **43.6%** | 14.0 |
+| **60%** | **9.0** | 9.2% | 1.12 | **50.3%** | 18.0 |
+| **70%** | **10.0** | 10.4% | 1.24 | **52.8%** | 20.0 |
+| **80%** | **13.0** | 10.4% | 1.42 | **66.3%** | 26.0 |
+| **90%** | **18.0** | 12.3% | 1.89 | **93.3%** | 36.0 |
+
+### 3. Key Observations
+- Raw MC-dropout severely underestimates uncertainty in usable tyre life: at 80% nominal coverage, raw MC-dropout covers only **10.4%** of true outcomes because weight jitter alone cannot account for compound degradation shifts and pit window variation.
+- Split-conformal calibration provides realistic bounds (e.g., $q = \pm 13.0\text{ laps}$ at 80% nominal, achieving $66.3\%$ out-of-sample coverage across different circuits).
+- Quantiles exported to `reports/conformal_quantiles.json` for live integration with the interactive dashboard.
+
 
 

@@ -1,7 +1,4 @@
-import os
-import numpy as np
-import pandas as pd
-import torch
+import os, json, numpy as np, pandas as pd, torch
 from src.models import create_gru_model
 from src.features import fit_baseline_curves, predict_causal_baseline, build_stint_features, eval_curve
 from src.live import compute_cliff_life
@@ -71,61 +68,71 @@ def collect_split_quantiles(model, laps_df, stints_df, curves, g_curve, track_ma
         true_list.append(true_rem)
         for t in targets:
             alpha = (1.0 - t) / 2.0
-            q_low = float(np.percentile(lives, alpha * 100))
-            q_high = float(np.percentile(lives, (1.0 - alpha) * 100))
-            q_dict[t][0].append(q_low)
-            q_dict[t][1].append(q_high)
+            q_dict[t][0].append(float(np.percentile(lives, alpha * 100)))
+            q_dict[t][1].append(float(np.percentile(lives, (1.0 - alpha) * 100)))
 
     res_q = {t: (np.array(q_dict[t][0]), np.array(q_dict[t][1])) for t in targets}
     return np.array(p50_list), np.array(true_list), res_q
 
 
-def fit_scale_factors(train_p50, train_true, train_q, targets):
-    """Fit interval scaling factor s on train uncensored stints for each target coverage."""
-    scale_factors = {}
+def split_2024_val_races(val_laps, seed=42):
+    """Split 2024 validation races in half by race with a fixed random seed."""
+    races = sorted(val_laps["race_id"].unique())
+    rng = np.random.default_rng(seed)
+    shuffled = list(races)
+    rng.shuffle(shuffled)
+    half = len(shuffled) // 2
+    return shuffled[:half], shuffled[half:]
+
+
+def compute_conformal_quantiles(cal_p50, cal_true, targets):
+    """Compute split-conformal absolute residual quantiles on calibration half."""
+    cal_resids = np.abs(cal_true - cal_p50)
+    n_cal = len(cal_resids)
+    sorted_resids = np.sort(cal_resids)
+    quantiles = {}
     for t in targets:
-        q_low, q_high = train_q[t]
-        best_s, best_diff = 1.0, float("inf")
-        for s in np.linspace(0.1, 4.0, 80):
-            sc_low = train_p50 + s * (q_low - train_p50)
-            sc_high = train_p50 + s * (q_high - train_p50)
-            cov = float(np.mean((train_true >= sc_low) & (train_true <= sc_high)))
-            diff = abs(cov - t)
-            if diff < best_diff:
-                best_diff, best_s = diff, float(s)
-        scale_factors[t] = best_s
-    return scale_factors
+        k_idx = min(int(np.ceil((n_cal + 1) * t)), n_cal)
+        quantiles[t] = float(sorted_resids[k_idx - 1])
+    return quantiles
 
 
-def evaluate_scaled_coverage(val_p50, val_true, val_q, scale_factors, targets):
-    """Evaluate raw and scaled coverage on validation uncensored stints."""
+def evaluate_conformal_and_mc(eval_p50, eval_true, eval_q, quantiles, targets):
+    """Evaluate conformal and raw MC-dropout coverage and width on evaluation half."""
     records = []
+    eval_errs = np.abs(eval_true - eval_p50)
     for t in targets:
-        q_low, q_high = val_q[t]
-        s = scale_factors[t]
-        sc_low = val_p50 + s * (q_low - val_p50)
-        sc_high = val_p50 + s * (q_high - val_p50)
-
-        raw_cov = float(np.mean((val_true >= q_low) & (val_true <= q_high)))
-        raw_width = float(np.mean(q_high - q_low))
-        sc_cov = float(np.mean((val_true >= sc_low) & (val_true <= sc_high)))
-        sc_width = float(np.mean(sc_high - sc_low))
+        q_val = quantiles[t]
+        conf_cov = float(np.mean(eval_errs <= q_val))
+        conf_width = round(2.0 * q_val, 2)
+        mc_low, mc_high = eval_q[t]
+        mc_cov = float(np.mean((eval_true >= mc_low) & (eval_true <= mc_high)))
+        mc_width = round(float(np.mean(mc_high - mc_low)), 2)
 
         records.append({
-            "target_coverage": t, "scale_factor_s": round(s, 2),
-            "raw_coverage": round(raw_cov, 3), "raw_width": round(raw_width, 2),
-            "scaled_coverage": round(sc_cov, 3), "scaled_width": round(sc_width, 2)
+            "target_coverage": t, "conformal_quantile_q": round(q_val, 2),
+            "raw_mc_coverage": round(mc_cov, 3), "raw_mc_width": mc_width,
+            "conformal_coverage": round(conf_cov, 3), "conformal_width": conf_width
         })
     return pd.DataFrame(records)
 
 
+def save_conformal_results(df_cov, quantiles, cal_races, eval_races):
+    """Save evaluation metrics to csv and conformal quantiles to json."""
+    df_cov.to_csv("reports/uncertainty_coverage.csv", index=False)
+    out_json = {str(k): v for k, v in quantiles.items()}
+    out_json["cal_races"] = cal_races
+    out_json["eval_races"] = eval_races
+    with open("reports/conformal_quantiles.json", "w") as f:
+        json.dump(out_json, f, indent=2)
+
+
 def run_part_e():
-    """Execute complete Part E uncertainty calibration and write reports/uncertainty_coverage.csv."""
+    """Execute split-conformal calibration on 2024 races and save reports."""
     tr_laps = pd.read_parquet("data/processed/train_laps.parquet")
     va_laps = pd.read_parquet("data/processed/val_laps.parquet")
     stints = pd.read_parquet("data/processed/stints.parquet")
     curves, g_curve = fit_baseline_curves(tr_laps)
-
     track_map = {t: i for i, t in enumerate(tr_laps["track_id"].unique())}
     compound_map = {c: i for i, c in enumerate(tr_laps["compound"].unique())}
 
@@ -134,19 +141,20 @@ def run_part_e():
     model.load_state_dict(ckpt)
     enable_dropout_at_inference(model)
 
-    tr_stints = stints[stints["stint_id"].isin(tr_laps["stint_id"].unique())]
-    va_stints = stints[stints["stint_id"].isin(va_laps["stint_id"].unique())]
+    cal_races, eval_races = split_2024_val_races(va_laps, seed=42)
+    cal_laps = va_laps[va_laps["race_id"].isin(cal_races)]
+    eval_laps = va_laps[va_laps["race_id"].isin(eval_races)]
+    cal_stints = stints[stints["stint_id"].isin(cal_laps["stint_id"].unique())]
+    eval_stints = stints[stints["stint_id"].isin(eval_laps["stint_id"].unique())]
+
     targets = [0.50, 0.60, 0.70, 0.80, 0.90]
+    cal_p50, cal_true, _ = collect_split_quantiles(model, cal_laps, cal_stints, curves, g_curve, track_map, compound_map, lap=5)
+    quantiles = compute_conformal_quantiles(cal_p50, cal_true, targets)
 
-    tr_p50, tr_true, tr_q = collect_split_quantiles(model, tr_laps, tr_stints, curves, g_curve, track_map, compound_map, lap=5)
-    scale_factors = fit_scale_factors(tr_p50, tr_true, tr_q, targets)
-
-    va_p50, va_true, va_q = collect_split_quantiles(model, va_laps, va_stints, curves, g_curve, track_map, compound_map, lap=5)
-    df_cov = evaluate_scaled_coverage(va_p50, va_true, va_q, scale_factors, targets)
-
-    out_path = "reports/uncertainty_coverage.csv"
-    df_cov.to_csv(out_path, index=False)
-    print("Part E completed! Saved to:", out_path)
+    eval_p50, eval_true, eval_q = collect_split_quantiles(model, eval_laps, eval_stints, curves, g_curve, track_map, compound_map, lap=5)
+    df_cov = evaluate_conformal_and_mc(eval_p50, eval_true, eval_q, quantiles, targets)
+    save_conformal_results(df_cov, quantiles, cal_races, eval_races)
+    print("Part 6 completed! Saved coverage and conformal_quantiles.json")
     print(df_cov.to_string())
     return df_cov
 
