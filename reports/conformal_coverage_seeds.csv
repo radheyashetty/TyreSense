@@ -1,0 +1,6 @@
+split_seed,target_coverage,conformal_coverage
+1,0.8,0.628
+2,0.8,0.681
+3,0.8,0.695
+4,0.8,0.717
+5,0.8,0.764

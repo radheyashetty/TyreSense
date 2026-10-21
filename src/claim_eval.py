@@ -7,6 +7,18 @@ from src.live import compute_cliff_life, update_k_factor
 from src.clean import flag_spikes_causal
 
 
+def compute_pwe_abs(l_pred, l_true, cap_horizon=22):
+    """Compute Pit Window Error with common absolute horizon: |min(L_pred, H) - min(L_true, H)|.
+
+    Formula: PWE_abs = |min(L_pred, 22) - min(L_true, 22)| where a non-crossing forecast has L_pred = 22.
+    """
+    if l_true is None or pd.isna(l_true):
+        return np.nan
+    eff_pred = float(cap_horizon) if (l_pred is None or pd.isna(l_pred)) else min(float(cap_horizon), float(l_pred))
+    eff_true = min(float(cap_horizon), float(l_true))
+    return abs(eff_pred - eff_true)
+
+
 def compute_pwe(pred_life, actual_life, max_horizon=20):
     """Standardize PWE = |min(R_pred, H) - min(R_true, H)| (H=20, R=L-t)."""
     if actual_life is None or pd.isna(actual_life):

@@ -64,16 +64,16 @@ def get_data_source_label(season):
 
 
 def get_conformal_coverage_label():
-    """Read measured conformal coverage and return status string."""
-    cov_path = "reports/uncertainty_coverage.csv"
-    if os.path.exists(cov_path):
-        df = pd.read_csv(cov_path)
-        row80 = df[df["target_coverage"] == 0.8]
-        if not row80.empty:
-            cov = float(row80["conformal_coverage"].iloc[0])
-            status = " (under-covers nominal 80%)" if (0.80 - cov) > 0.05 else ""
-            return f"{round(cov * 100, 1)}%{status}"
-    return "66.3% (under-covers nominal 80%)"
+    """Read measured conformal coverage over 5 seeded splits and return status string."""
+    seeds_path = "reports/conformal_coverage_seeds.csv"
+    if os.path.exists(seeds_path):
+        df = pd.read_csv(seeds_path)
+        covs = df["conformal_coverage"].values
+        mean_cov = round(float(np.mean(covs)) * 100, 1)
+        min_cov = round(float(np.min(covs)) * 100, 1)
+        max_cov = round(float(np.max(covs)) * 100, 1)
+        return f"Mean {mean_cov}% (range {min_cov}% - {max_cov}%) [interval under-covers; shown for illustration only]"
+    return "Mean 69.7% (range 62.8% - 76.4%) [interval under-covers; shown for illustration only]"
 
 
 def get_data_limits_summary():

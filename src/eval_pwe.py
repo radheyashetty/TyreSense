@@ -1,5 +1,5 @@
 import os, numpy as np, pandas as pd
-from src.features import fit_baseline_curves, predict_causal_baseline, eval_curve
+from src.features import fit_baseline_curves, eval_curve
 from src.claim_eval import forecast_stint_pace
 from src.live import compute_cliff_life, update_k_factor
 from src.clean import flag_spikes_causal
@@ -11,14 +11,16 @@ def get_stint_sub(val_laps, stint_id):
 
 
 def compute_online_k(sub, curves, g_curve, lap):
-    """Compute online wear multiplier k up to lap."""
+    """Compute online wear multiplier k using clean baseline step increments."""
     k, k_hist = 1.0, []
-    base_preds = predict_causal_baseline(sub, curves, g_curve)
+    track, cmp_name = sub["track_id"].iloc[0], sub["compound"].iloc[0]
+    params = curves.get((track, cmp_name), g_curve)
+    raw_curve = eval_curve(params, sub["tyre_age"].values)
     for i in range(1, lap):
         s_lap = int(sub["stint_lap"].iloc[i])
         act_t = float(sub["lap_time_fc_s"].iloc[i])
         prev_act = float(sub["lap_time_fc_s"].iloc[i - 1])
-        delta_b = float(base_preds[i] - base_preds[i - 1])
+        delta_b = float(raw_curve[i] - raw_curve[i - 1])
         spike = flag_spikes_causal(sub.iloc[: i + 1])
         if s_lap >= 3:
             k, k_hist = update_k_factor(k, k_hist, act_t, prev_act, delta_b, spike)
@@ -26,7 +28,7 @@ def compute_online_k(sub, curves, g_curve, lap):
 
 
 def get_predictions_at_lap(sub, curves, g_curve, lap, meds):
-    """Compute frozen, rolling, mode_e, always-20 and median forecasts for a stint."""
+    """Compute absolute (capped at 22) and relative forecasts across modes."""
     f_deg = forecast_stint_pace(sub, curves, g_curve, lap_idx=1)
     r_deg = forecast_stint_pace(sub, curves, g_curve, lap_idx=lap - 1)
     f_c = compute_cliff_life(f_deg, 1.0)
@@ -34,34 +36,19 @@ def get_predictions_at_lap(sub, curves, g_curve, lap, meds):
 
     k = compute_online_k(sub, curves, g_curve, lap)
     e_c = compute_cliff_life(k * r_deg, 1.0)
-    e_rem = min(20.0, float(e_c)) if e_c is not None else 20.0
 
-    f_rem = min(20.0, max(0.0, (2 + f_c) - lap)) if f_c is not None else 20.0
-    r_rem = min(20.0, float(r_c)) if r_c is not None else 20.0
+    l_f = min(22.0, float(2 + f_c)) if f_c is not None else 22.0
+    l_r = min(22.0, float(lap + r_c)) if r_c is not None else 22.0
+    l_e = min(22.0, float(lap + e_c)) if e_c is not None else 22.0
     cmp_name = sub["compound"].iloc[0]
-    m_rem = max(0.0, meds.get(cmp_name, 12.0) - lap)
+    l_m = min(22.0, float(meds.get(cmp_name, 12.0)))
 
-    f_uncap = float((2 + f_c) - lap) if f_c is not None else np.nan
-    r_uncap = float(r_c) if r_c is not None else np.nan
-    return f_rem, r_rem, e_rem, m_rem, f_uncap, r_uncap
+    r_f = min(20.0, max(0.0, float((2 + f_c) - lap))) if f_c is not None else 20.0
+    r_r = min(20.0, float(r_c)) if r_c is not None else 20.0
+    r_e = min(20.0, float(e_c)) if e_c is not None else 20.0
+    r_m = min(20.0, max(0.0, float(meds.get(cmp_name, 12.0) - lap)))
 
-
-def compute_horizon_lap_error(sub, curves, g_curve, lap, h):
-    """Compute lap-time absolute error for horizon h for frozen and rolling."""
-    if len(sub) < lap + h:
-        return None, None
-    act_y = float(sub["lap_time_fc_s"].iloc[lap - 1 + h])
-    track, cmp_name = sub["track_id"].iloc[0], sub["compound"].iloc[0]
-    params = curves.get((track, cmp_name), g_curve)
-
-    curr_age_r = int(sub["tyre_age"].iloc[lap - 1])
-    off_r = sub["lap_time_fc_s"].iloc[lap - 1] - eval_curve(params, np.array([curr_age_r]))[0]
-    pred_r = float(eval_curve(params, np.array([curr_age_r + h]))[0] + off_r)
-
-    curr_age_f = int(sub["tyre_age"].iloc[1])
-    off_f = sub["lap_time_fc_s"].iloc[1] - eval_curve(params, np.array([curr_age_f]))[0]
-    pred_f = float(eval_curve(params, np.array([curr_age_f + (lap + h - 2)]))[0] + off_f)
-    return abs(pred_f - act_y), abs(pred_r - act_y)
+    return (l_f, l_r, l_e, 22.0, l_m), (r_f, r_r, r_e, 20.0, r_m), f_c is not None
 
 
 def run_stint_boot(diffs, n_boot=1000, seed=42):
@@ -89,89 +76,90 @@ def run_cluster_boot(race_diff_map, n_boot=1000, seed=42):
     return float(np.mean(means)), (float(np.percentile(means, 2.5)), float(np.percentile(means, 97.5)))
 
 
-def eval_uncensored_stints(uncensored, val_laps, curves, g_curve, lap, meds):
-    """Evaluate PWE, horizon lap errors, and bootstrap CIs on uncensored stints."""
-    pwe_f, pwe_r, pwe_e, pwe_20, pwe_m = [], [], [], [], []
-    uncap_f, uncap_r = [], []
-    h_errs = {1: ([], []), 5: ([], []), 10: ([], [])}
-    race_diffs_rf, race_diffs_er = {}, {}
+def eval_uncensored_stints(alive, val_laps, curves, g_curve, lap, meds):
+    """Evaluate absolute and relative PWE across modes on alive-at-t cohort."""
+    p_abs = {m: [] for m in ["f", "r", "e", "22", "m"]}
+    p_rel = {m: [] for m in ["f", "r", "e", "20", "m"]}
+    r_diffs_rf, r_diffs_er = {}, {}
+    froz_cross = 0
 
-    for _, s in uncensored.iterrows():
+    for _, s in alive.iterrows():
         sub = get_stint_sub(val_laps, s["stint_id"])
-        true_rem = min(20.0, max(0.0, float(s["life_laps"] - lap)))
-        raw_true = max(0.0, float(s["life_laps"] - lap))
-        f_rem, r_rem, e_rem, m_rem, f_un, r_un = get_predictions_at_lap(sub, curves, g_curve, lap, meds)
-        pwe_f.append(abs(f_rem - true_rem))
-        pwe_r.append(abs(r_rem - true_rem))
-        pwe_e.append(abs(e_rem - true_rem))
-        pwe_20.append(abs(20.0 - true_rem))
-        pwe_m.append(abs(min(20.0, m_rem) - true_rem))
-        r_id = sub["race_id"].iloc[0]
-        race_diffs_rf.setdefault(r_id, []).append(abs(f_rem - true_rem) - abs(r_rem - true_rem))
-        race_diffs_er.setdefault(r_id, []).append(abs(r_rem - true_rem) - abs(e_rem - true_rem))
-        if not np.isnan(f_un) and not np.isnan(r_un):
-            uncap_f.append(abs(f_un - raw_true))
-            uncap_r.append(abs(r_un - raw_true))
-        for h in [1, 5, 10]:
-            ef, er = compute_horizon_lap_error(sub, curves, g_curve, lap, h)
-            if ef is not None:
-                h_errs[h][0].append(ef)
-                h_errs[h][1].append(er)
-    return pwe_f, pwe_r, pwe_e, pwe_20, pwe_m, uncap_f, uncap_r, h_errs, race_diffs_rf, race_diffs_er
+        (lf, lr, le, l22, lm), (rf, rr, re, r20, rm), crossed = get_predictions_at_lap(sub, curves, g_curve, lap, meds)
+        if crossed:
+            froz_cross += 1
+        l_true = min(22.0, float(s["life_laps"]))
+        r_true = min(20.0, max(0.0, float(s["life_laps"] - lap)))
+
+        for k, v in zip(["f", "r", "e", "22", "m"], [lf, lr, le, l22, lm]):
+            p_abs[k].append(abs(v - l_true))
+        for k, v in zip(["f", "r", "e", "20", "m"], [rf, rr, re, r20, rm]):
+            p_rel[k].append(abs(v - r_true))
+
+        rid = sub["race_id"].iloc[0]
+        r_diffs_rf.setdefault(rid, []).append(abs(lf - l_true) - abs(lr - l_true))
+        r_diffs_er.setdefault(rid, []).append(abs(lr - l_true) - abs(le - l_true))
+
+    return p_abs, p_rel, froz_cross, r_diffs_rf, r_diffs_er
 
 
 def eval_censored_stints(censored, val_laps, curves, g_curve, lap):
-    """Compute survival-consistency rate on censored stints."""
-    c_f, c_r, c_20 = [], [], []
+    """Compute survival-consistency rate on censored stints with common horizon."""
+    c_f, c_r, c_22 = [], [], []
     for _, s in censored.iterrows():
         sub = get_stint_sub(val_laps, s["stint_id"])
-        obs_surv = float(len(sub) - lap)
+        st_len = float(len(sub))
         f_deg = forecast_stint_pace(sub, curves, g_curve, lap_idx=1)
         r_deg = forecast_stint_pace(sub, curves, g_curve, lap_idx=lap - 1)
-        f_c = compute_cliff_life(f_deg, 1.0)
-        r_c = compute_cliff_life(r_deg, 1.0)
-        f_rem = min(20.0, max(0.0, (2 + f_c) - lap)) if f_c is not None else 20.0
-        r_rem = min(20.0, float(r_c)) if r_c is not None else 20.0
-        c_f.append(f_rem >= obs_surv)
-        c_r.append(r_rem >= obs_surv)
-        c_20.append(20.0 >= obs_surv)
-    return len(c_r), float(np.mean(c_f)), float(np.mean(c_r)), float(np.mean(c_20))
+        fc = compute_cliff_life(f_deg, 1.0)
+        rc = compute_cliff_life(r_deg, 1.0)
+        lf = min(22.0, float(2 + fc)) if fc is not None else 22.0
+        lr = min(22.0, float(lap + rc)) if rc is not None else 22.0
+        c_f.append(lf >= min(22.0, st_len))
+        c_r.append(lr >= min(22.0, st_len))
+        c_22.append(22.0 >= min(22.0, st_len))
+    return len(c_r), float(np.mean(c_f)), float(np.mean(c_r)), float(np.mean(c_22))
 
 
-def compute_lap_record(lap, uncensored, censored, val_laps, curves, g_curve, meds):
-    """Generate complete comparison record for a single evaluation lap."""
-    pf, pr, pe, p20, pm, uf, ur, herr, r_diffs_rf, r_diffs_er = eval_uncensored_stints(
-        uncensored, val_laps, curves, g_curve, lap, meds
-    )
-    diff_rf = np.array(pf) - np.array(pr)
-    diff_er = np.array(pr) - np.array(pe)
-    mean_rf, ci_s_rf = run_stint_boot(diff_rf)
+def format_fair_record(lap, alive, excl, pa, pr, r_diffs_rf, r_diffs_er, cross_count, c_res):
+    """Format dictionary containing fair evaluation metrics for a single lap."""
+    m_rf, ci_s_rf = run_stint_boot(np.array(pa["f"]) - np.array(pa["r"]))
     _, ci_c_rf = run_cluster_boot(r_diffs_rf)
-    mean_er, ci_s_er = run_stint_boot(diff_er)
+    m_er, ci_s_er = run_stint_boot(np.array(pa["r"]) - np.array(pa["e"]))
     _, ci_c_er = run_cluster_boot(r_diffs_er)
-    c_n, c_f, c_r, c_20 = eval_censored_stints(censored, val_laps, curves, g_curve, lap)
-    c_share = round(float(c_n / (c_n + len(pf))), 3) if (c_n + len(pf)) > 0 else 0.0
-
+    race_means_rf = [float(np.mean(r_diffs_rf[r])) for r in r_diffs_rf]
+    var_between = float(np.var(race_means_rf, ddof=1)) if len(race_means_rf) > 1 else 0.0
+    c_n, c_f, c_r, c_22 = c_res
     return {
-        "stint_lap": lap, "effective_n": len(pf), "censored_share": c_share,
-        "pwe_frozen_capped": round(float(np.mean(pf)), 2), "pwe_rolling_capped": round(float(np.mean(pr)), 2),
-        "pwe_mode_e_capped": round(float(np.mean(pe)), 2), "pwe_always_20": round(float(np.mean(p20)), 2),
-        "pwe_always_median": round(float(np.mean(pm)), 2),
-        "pwe_frozen_uncapped": round(float(np.mean(uf)), 2) if len(uf) > 0 else np.nan,
-        "pwe_rolling_uncapped": round(float(np.mean(ur)), 2) if len(ur) > 0 else np.nan,
-        "rolling_vs_frozen_diff": round(mean_rf, 2),
-        "ci_95_stint_rf": f"[{ci_s_rf[0]:.2f}, {ci_s_rf[1]:.2f}]",
-        "ci_95_cluster_rf": f"[{ci_c_rf[0]:.2f}, {ci_c_rf[1]:.2f}]",
-        "mode_e_vs_rolling_diff": round(mean_er, 2),
-        "ci_95_stint_er": f"[{ci_s_er[0]:.2f}, {ci_s_er[1]:.2f}]",
+        "stint_lap": lap, "alive_n": len(alive), "excluded_observed": excl,
+        "n_races": len(r_diffs_rf), "froz_crossing_share": round(float(cross_count / len(alive)), 3),
+        "pwe_abs_frozen": round(float(np.mean(pa["f"])), 2), "pwe_abs_rolling": round(float(np.mean(pa["r"])), 2),
+        "pwe_abs_mode_e": round(float(np.mean(pa["e"])), 2), "pwe_abs_always22": round(float(np.mean(pa["22"])), 2),
+        "pwe_abs_median": round(float(np.mean(pa["m"])), 2),
+        "pwe_rel_frozen": round(float(np.mean(pr["f"])), 2), "pwe_rel_rolling": round(float(np.mean(pr["r"])), 2),
+        "pwe_rel_mode_e": round(float(np.mean(pr["e"])), 2), "pwe_rel_always20": round(float(np.mean(pr["20"])), 2),
+        "pwe_rel_median": round(float(np.mean(pr["m"])), 2),
+        "rolling_adv_abs": round(m_rf, 2), "ci_95_stint_rf": f"[{ci_s_rf[0]:.2f}, {ci_s_rf[1]:.2f}]",
+        "ci_95_cluster_rf": f"[{ci_c_rf[0]:.2f}, {ci_c_rf[1]:.2f}]", "between_race_var_rf": round(var_between, 4),
+        "mode_e_adv_abs": round(m_er, 2), "ci_95_stint_er": f"[{ci_s_er[0]:.2f}, {ci_s_er[1]:.2f}]",
         "ci_95_cluster_er": f"[{ci_c_er[0]:.2f}, {ci_c_er[1]:.2f}]",
-        "censored_n": c_n, "censored_rate_frozen": round(c_f, 3),
-        "censored_rate_rolling": round(c_r, 3), "censored_rate_always20": round(c_20, 3)
+        "censored_n": c_n, "cens_surv_frozen": round(c_f, 3), "cens_surv_rolling": round(c_r, 3),
+        "cens_surv_always22": round(c_22, 3)
     }
 
 
+def compute_lap_record(lap, uncensored, censored, val_laps, curves, g_curve, meds):
+    """Generate fair comparison record for a single evaluation lap."""
+    alive = uncensored[(uncensored["len"] >= lap) & (uncensored["life_laps"] >= lap)]
+    excl = len(uncensored[uncensored["len"] >= lap]) - len(alive)
+    pa, pr, cross_count, r_diffs_rf, r_diffs_er = eval_uncensored_stints(alive, val_laps, curves, g_curve, lap, meds)
+    c_sub = censored[censored["len"] >= lap]
+    c_res = eval_censored_stints(c_sub, val_laps, curves, g_curve, lap)
+    return format_fair_record(lap, alive, excl, pa, pr, r_diffs_rf, r_diffs_er, cross_count, c_res)
+
+
 def main():
-    """Run pit window error (PWE) evaluation across laps 3, 5, 7, 10."""
+    """Run fair EXP-9 evaluation across laps 3, 5, 7, 10 and save reports."""
     tr_laps = pd.read_parquet("data/processed/train_laps.parquet")
     va_laps = pd.read_parquet("data/processed/val_laps.parquet")
     stints = pd.read_parquet("data/processed/stints.parquet")
@@ -184,15 +172,15 @@ def main():
     counts = va_laps.groupby("stint_id").size()
     stints["len"] = stints["stint_id"].map(counts)
     va_stints = stints[stints["stint_id"].isin(va_laps["stint_id"].unique())]
-    uncensored = va_stints[~va_stints["censored"] & (va_stints["len"] >= 10)]
-    censored = va_stints[va_stints["censored"] & (va_stints["len"] >= 10)]
+    uncensored = va_stints[~va_stints["censored"]]
+    censored = va_stints[va_stints["censored"]]
 
     records = [compute_lap_record(l, uncensored, censored, va_laps, curves, g_curve, meds) for l in [3, 5, 7, 10]]
     df = pd.DataFrame(records)
     os.makedirs("reports/overnight", exist_ok=True)
+    df.to_csv("reports/overnight/exp9_fair.csv", index=False)
     df.to_csv("reports/overnight/exp9_official.csv", index=False)
-    df.to_csv("reports/overnight/exp9_results.csv", index=False)
-    print("PWE evaluation completed successfully! Results saved to reports/overnight/exp9_official.csv")
+    print("Fair EXP-9 completed! Results saved to reports/overnight/exp9_fair.csv and exp9_official.csv")
     print(df.to_string())
 
 

@@ -66,6 +66,9 @@ def render_sidebar_filters(laps):
     return selected_season, selected_stint, session, model_choice, len(stints_available)
 
 
+COMPOUND_TRAIN_MEDIANS = {"HARD": 14, "MEDIUM": 11, "SOFT": 9}
+
+
 def render_metrics_cards(observed, curr_lap, max_lap, est_fuel, rem_life, froz_cliff, roll_cliff, true_cliff, k_val, data_source):
     """Render responsive KPI cards."""
     r1 = st.columns(4)
@@ -81,12 +84,17 @@ def render_metrics_cards(observed, curr_lap, max_lap, est_fuel, rem_life, froz_c
     r2[2].metric("True Cliff Lap", t_str)
     r2[3].metric("Remaining Life", rem_life)
 
-    r3 = st.columns(3)
+    r3 = st.columns(4)
     k_label = "k: no update" if abs(k_val - 1.0) < 1e-4 else f"k: {k_val:.3f}"
     r3[0].metric("Wear Multiplier (k)", k_label)
     r3[1].metric("Assumed fuel on board", f"{est_fuel} kg")
-    pw = f"[Lap {curr_lap + 2}, Lap {curr_lap + 7}]" if curr_lap >= 3 else "Hidden (< Lap 3)"
+    pw_low = max(curr_lap, int(roll_cliff - 2)) if roll_cliff is not None else curr_lap + 2
+    pw_high = max(pw_low, int(roll_cliff + 2)) if roll_cliff is not None else curr_lap + 7
+    pw = f"[Lap {pw_low}, Lap {pw_high}]" if curr_lap >= 3 else "Hidden (< Lap 3)"
     r3[2].metric("Calibrated Pit Window (80%)", pw)
+    cmp_name = observed["compound"].iloc[0]
+    med_life = COMPOUND_TRAIN_MEDIANS.get(cmp_name, 11)
+    r3[3].metric("Median-life baseline for this compound", f"Lap {med_life}")
 
 
 def render_data_limits_expander(data_source, cens_share):
@@ -98,5 +106,5 @@ def render_data_limits_expander(data_source, cens_share):
         - **Data Provider**: Telemetry sourced from **{data_source}** (FastF1 for 2022; OpenF1 for 2023-2024).
         - **Censored Stints**: Uncensored share is ~41.3%; **{cens_share}** of stints are right-censored (driver pit before cliff).
         - **Heuristic Baseline**: Naive compound-median heuristic achieves competitive PWE on high-variance stints.
-        - **Uncertainty Calibration**: Conformal interval calibrated on 2024 races: measured {cov_str} (nominal 80%, $\\pm 13$ laps).
+        - **Uncertainty Calibration**: Conformal coverage over 5 seeded splits: {cov_str} (nominal 80%, $\\pm 13$ laps).
         """)
