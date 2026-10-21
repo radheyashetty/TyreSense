@@ -47,11 +47,16 @@ def get_stint_subset(laps_df, selected_stint):
 
 def load_cached_model(model_choice):
     """Load requested neural checkpoint or return None if tabular/unavailable."""
-    if "Model D (GRU)" in model_choice:
-        ckpt_path = "runs/gru_main/checkpoint.pt"
-        if os.path.exists(ckpt_path):
-            model = create_gru_model()
-            ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    from src.models import create_lstm_model, create_rnn_model
+    ckpt_map = {
+        "GRU": ("runs/gru_main/checkpoint.pt", create_gru_model),
+        "LSTM": ("runs/lstm_main/checkpoint.pt", create_lstm_model),
+        "RNN": ("runs/rnn_main/checkpoint.pt", create_rnn_model),
+    }
+    for key, (path, factory) in ckpt_map.items():
+        if key in model_choice and os.path.exists(path):
+            model = factory()
+            ckpt = torch.load(path, map_location="cpu", weights_only=False)
             model.load_state_dict(ckpt)
             model.eval()
             return model
