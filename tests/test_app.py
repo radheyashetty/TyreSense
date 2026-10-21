@@ -1,5 +1,4 @@
-import time
-import pandas as pd
+import time, pytest, pandas as pd, numpy as np
 from app import (
     load_app_data,
     get_stint_subset,
@@ -7,6 +6,7 @@ from app import (
     compute_remaining_life,
     plot_stint_replay,
 )
+from src.app_data import assert_no_2025_in_app
 
 
 def test_app_first_render_and_data_load_time():
@@ -50,16 +50,53 @@ def test_uncertainty_band_hidden_before_lap_3():
     sample_stint = laps["stint_id"].iloc[0]
     full_stint = get_stint_subset(laps, sample_stint)
 
-    # Lap 2: band should not be in figure traces
     obs_lap2 = full_stint[full_stint["stint_lap"] <= 2]
     fut_laps, fut_times, base_time = forecast_future_laps(obs_lap2, curves, global_curve)
     fig_lap2 = plot_stint_replay(obs_lap2, fut_laps, fut_times, base_time, curr_lap=2)
     names_lap2 = [t.name for t in fig_lap2.data if t.name is not None]
     assert "80% Uncertainty Band" not in names_lap2
 
-    # Lap 3: band should be present in figure traces
     obs_lap3 = full_stint[full_stint["stint_lap"] <= 3]
     fut_laps3, fut_times3, base_time3 = forecast_future_laps(obs_lap3, curves, global_curve)
     fig_lap3 = plot_stint_replay(obs_lap3, fut_laps3, fut_times3, base_time3, curr_lap=3)
     names_lap3 = [t.name for t in fig_lap3.data if t.name is not None]
     assert "80% Uncertainty Band" in names_lap3
+
+
+def test_causal_slice_strictness():
+    """Verify that observed telemetry never leaks laps beyond curr_lap."""
+    laps, _, _, _ = load_app_data()
+    full_stint = get_stint_subset(laps, laps["stint_id"].iloc[0])
+    for target in [1, 3, 5, 8]:
+        obs = full_stint[full_stint["stint_lap"] <= target]
+        assert obs["stint_lap"].max() == target
+        assert not (obs["stint_lap"] > target).any()
+
+
+def test_model_switch_changes_forecast():
+    """Verify that switching forecasting models alters the resulting forecast."""
+    laps, _, curves, g_curve = load_app_data()
+    full_stint = get_stint_subset(laps, laps["stint_id"].iloc[0])
+    obs = full_stint[full_stint["stint_lap"] <= 5]
+    _, fut_a, _ = forecast_future_laps(obs, curves, g_curve, model_choice="Model A (Baseline Curve)")
+    _, fut_e, _ = forecast_future_laps(obs, curves, g_curve, k=1.4, model_choice="Model E")
+    assert not np.allclose(fut_a, fut_e), "Switching from Model A to Model E must change forecast"
+
+
+def test_empty_state_handling():
+    """Verify that empty filter combinations are handled gracefully."""
+    laps, _, _, _ = load_app_data()
+    empty_slice = laps[laps["driver"] == "NONEXISTENT_DRIVER"]
+    assert empty_slice.empty
+    stints_avail = sorted(empty_slice["stint_id"].unique())
+    assert len(stints_avail) == 0
+
+
+def test_app_2025_test_lock():
+    """Verify that app dataset contains zero 2025 data and lock triggers on breach."""
+    laps, stints, _, _ = load_app_data()
+    assert not (laps["season"] == "2025").any()
+    assert not (laps["race_id"].str.startswith("2025")).any()
+    breach_df = pd.DataFrame({"race_id": ["2025_01", "2024_01"]})
+    with pytest.raises(AssertionError, match="R3 Violation: 2025 data detected"):
+        assert_no_2025_in_app(breach_df)

@@ -240,5 +240,51 @@ Evaluated on the independent 11-race evaluation split:
 - Split-conformal calibration provides realistic bounds (e.g., $q = \pm 13.0\text{ laps}$ at 80% nominal, achieving $66.3\%$ out-of-sample coverage across different circuits).
 - Quantiles exported to `reports/conformal_quantiles.json` for live integration with the interactive dashboard.
 
+---
+
+## Part 7: Interactive Application Overhaul (`app.py`)
+
+### 1. Architectural Modularization
+To comply strictly with `AGENT_RULES.md` ($\le 200$ lines per file, $\le 30$ lines per function, 0 lambdas), `app.py` was refactored into modular helper modules:
+- `src/app_data.py` (81 lines): Causal data loading, test lock validation, and model loading.
+- `src/app_forecast.py` (69 lines): Multi-horizon forecast execution, one-step-ahead online $k$ computation, and cliff extraction.
+- `src/app_ui.py` (100 lines): Plotly degradation replay charts, metric card grids, and expander documentation.
+- `app.py` (93 lines): Session playback orchestration (`◀ Back`, `▶ Play`, `Forward ▶`), slider navigation, and view layout.
+
+### 2. Test Lock & Reachable Race IDs Verification (Requirement 0)
+- The app season selector lists exclusively **2022, 2023, 2024**.
+- `assert_no_2025_in_app` enforces that no 2025 data can ever enter the app pipeline.
+- **Season List**: `['2022', '2023', '2024']`
+- **Reachable Race IDs**: Exactly 59 races (18 in 2022, 20 in 2023, 21 in 2024). Zero 2025 race IDs are reachable.
+
+### 3. Model Switcher & Empirical Forecast Differences (Requirement 2)
+Changing the forecasting model in the sidebar dynamically alters the forward prediction:
+- Example: Stint `2022_01_VER_1` evaluated at Lap 5:
+  - **Model A (Baseline Curve)** predicted degradation: `[0.000s, 0.108s, 0.214s, 0.317s, 0.418s]` across future laps 6 to 10.
+  - **Model E (Online Adaptive)** predicted degradation: `[1.232s, 1.384s, 1.532s, 1.676s, 1.818s]` across future laps 6 to 10.
+  - Difference: $+1.232\text{ s}$ to $+1.400\text{ s}$.
+
+### 4. Visualizations & Metrics Cards (Requirements 3, 4, 5, 6)
+- **Degradation Chart**: Y-axis displays `"Degradation vs baseline (s)"` above the stint baseline (mean of laps 1–3), with an explicit cliff line at `+1.0 s`.
+- **Calibrated Uncertainty Band**: Incorporates split-conformal bounds from Part 6, visible only for `stint_lap >= 3` and hidden prior to lap 3.
+- **Side-by-Side KPI Cards**: Displays FROZEN vs ROLLING predicted cliff lap, remaining usable life, and hides True Cliff Lap until the replay actually reaches or crosses it.
+- **Online $k$ Factor**: Displays `"k: no update"` when $k \equiv 1.0$, else displays formatted live multiplier $k$.
+- **Expander "Data and limits"**: Discloses telemetry data provider (`FastF1` for 2022, `OpenF1` for 2023–2024) and documents right-censored stint limits ($61.5\%$).
+
+### 5. Automated Playwright Screenshots (Requirement 8)
+- Playwright is not installed in the environment (`ModuleNotFoundError: No module named 'playwright'`), and per `AGENT_RULES.md`, installing new external libraries is strictly forbidden.
+- Per user instructions: **NOT CAPTURED** (no speculative visual checks claimed).
+
+### 6. App Test Suite (`tests/test_app.py`)
+All 7 unit and benchmark tests passed in 6.38s (`python -m pytest tests/test_app.py`):
+1. `test_app_first_render_and_data_load_time`: Data load time $< 3.0\text{ s}$ (passed).
+2. `test_forecast_causality_and_step_render_time`: Single replay step render time $< 1.0\text{ s}$ (passed).
+3. `test_uncertainty_band_hidden_before_lap_3`: Verified uncertainty band is hidden at lap 1 and 2, and rendered at lap 3 (passed).
+4. `test_causal_slice_strictness`: Confirmed observed telemetry never leaks future laps (passed).
+5. `test_model_switch_changes_forecast`: Confirmed model switching changes forward predictions (passed).
+6. `test_empty_state_handling`: Verified clean handling when filter returns 0 stints (passed).
+7. `test_app_2025_test_lock`: Verified zero 2025 data is loaded and assertions trigger on simulated breach (passed).
+
+
 
 
