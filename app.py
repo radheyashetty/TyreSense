@@ -5,11 +5,11 @@ from src.app_data import (
 )
 from src.app_forecast import (
     forecast_future_laps, compute_live_k,
-    compute_remaining_life, compute_cliff_lap_int
+    compute_remaining_life, compute_cliff_lap_int, compute_all_model_forecasts
 )
 from src.app_ui import (
-    plot_stint_replay, render_sidebar_filters,
-    render_metrics_cards, render_data_limits_expander
+    plot_stint_replay, plot_multi_model_replay, render_comparison_table,
+    render_sidebar_filters, render_metrics_cards, render_data_limits_expander
 )
 
 
@@ -34,7 +34,7 @@ def init_session_state(selected_stint, max_lap):
 def compute_stint_replay_data(full_stint, curr_lap, curves, global_curve, model_choice, model_obj, q_val):
     """Generate observed slice, frozen reference, and multi-step forecast."""
     observed = full_stint[full_stint["stint_lap"] <= curr_lap]
-    k_val = compute_live_k(full_stint, curr_lap, curves, global_curve) if "Model E" in model_choice else 1.0
+    k_val = compute_live_k(full_stint, curr_lap, curves, global_curve) if ("Model E" in model_choice or model_choice == "Compare All Models") else 1.0
 
     fut_laps, fut_times, base_time = forecast_future_laps(
         observed, curves, global_curve, k=k_val, model_choice=model_choice, model_obj=model_obj
@@ -46,6 +46,18 @@ def compute_stint_replay_data(full_stint, curr_lap, curves, global_curve, model_
     froz_cliff = compute_cliff_lap_int(fut_laps, froz_times, base_time)
     roll_cliff = compute_cliff_lap_int(fut_laps, fut_times, base_time)
     return observed, fut_laps, fut_times, froz_times, base_time, rem_life, froz_cliff, roll_cliff, k_val
+
+
+def render_view_content(obs, f_laps, f_times, fr_times, b_time, q_val, curr_lap, curves, global_curve, k_val, model_choice):
+    """Render single-model or multi-model comparison view and table."""
+    if model_choice == "Compare All Models":
+        results = compute_all_model_forecasts(obs, curves, global_curve, k_val)
+        fig = plot_multi_model_replay(obs, results, b_time, froz_times=fr_times)
+        st.plotly_chart(fig, width="stretch")
+        render_comparison_table(results)
+    else:
+        fig = plot_stint_replay(obs, f_laps, f_times, b_time, froz_times=fr_times, curr_lap=curr_lap, q_val=q_val)
+        st.plotly_chart(fig, width="stretch")
 
 
 def render_replay_view(laps, stints, curves, global_curve, season, selected_stint, session, model_choice):
@@ -71,8 +83,7 @@ def render_replay_view(laps, stints, curves, global_curve, season, selected_stin
     d_source = get_data_source_label(season)
 
     render_metrics_cards(obs, curr_lap, max_lap, est_fuel, rem_life, f_cliff, r_cliff, true_cliff, k_val, d_source)
-    fig = plot_stint_replay(obs, f_laps, f_times, b_time, froz_times=fr_times, curr_lap=curr_lap, q_val=q_val)
-    st.plotly_chart(fig, width="stretch")
+    render_view_content(obs, f_laps, f_times, fr_times, b_time, q_val, curr_lap, curves, global_curve, k_val, model_choice)
     render_data_limits_expander(d_source, get_data_limits_summary())
 
 

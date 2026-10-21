@@ -124,3 +124,30 @@ def test_forecast_continuity_20_val_stints():
         diff_e = abs(fut_e[0] - last_obs)
         assert diff_a < 0.5, f"Model A first step jump {diff_a} >= 0.5s on {sid}"
         assert diff_e < 0.5, f"Model E first step jump {diff_e} >= 0.5s on {sid}"
+
+
+def test_neural_models_produce_valid_continuous_forecasts():
+    """Verify GRU, LSTM, and RNN execute neural inference and join smoothly."""
+    from src.app_data import load_cached_model
+    laps, _, curves, g_curve = load_app_data()
+    sub = get_stint_subset(laps, laps["stint_id"].iloc[0])
+    obs = sub[sub["stint_lap"] <= 5]
+    last_obs = float(obs["lap_time_fc_s"].iloc[-1])
+
+    _, fut_base, _ = forecast_future_laps(obs, curves, g_curve, model_choice="Model A")
+    for name in ["GRU Forecaster", "LSTM Forecaster", "Vanilla RNN"]:
+        m = load_cached_model(name)
+        assert m is not None, f"Checkpoint for {name} must exist"
+        laps_out, times_out, _ = forecast_future_laps(obs, curves, g_curve, model_choice=name, model_obj=m)
+        assert len(laps_out) == 20 and len(times_out) == 20
+        assert not np.isnan(times_out).any()
+        assert abs(times_out[0] - last_obs) < 0.5
+        assert not np.allclose(times_out, fut_base), f"{name} must differ from baseline"
+
+
+def test_streamlit_app_renders_smoke_test():
+    """Verify Streamlit app initializes and renders default view headlessly without exceptions."""
+    from streamlit.testing.v1 import AppTest
+    at = AppTest.from_file("app.py", default_timeout=30)
+    at.run()
+    assert len(at.exception) == 0

@@ -65,9 +65,53 @@ def render_sidebar_filters(laps):
         "LSTM Forecaster (Cell-State Memory)",
         "Vanilla RNN (Baseline Recurrent Net)",
         "Neural-Guided Adaptive (Model E)",
+        "Compare All Models",
     ]
     model_choice = st.sidebar.radio("Forecasting Model", models)
     return selected_season, selected_stint, model_choice, len(stints_available)
+
+
+def plot_multi_model_replay(observed_df, model_results, base_time, froz_times=None, threshold=1.0):
+    """Build shared Plotly chart comparing all four model forecasts on the same stint."""
+    fig = go.Figure()
+    obs_laps = observed_df["stint_lap"].values
+    obs_deg = observed_df["lap_time_fc_s"].values - base_time
+    fig.add_trace(go.Scatter(x=obs_laps, y=obs_deg, mode="lines+markers", name="Observed Degradation", line=dict(color="#1f77b4", width=3)))
+
+    if froz_times is not None and len(froz_times) > 0 and len(model_results) > 0:
+        fut_laps = model_results[0]["fut_laps"]
+        fig.add_trace(go.Scatter(x=fut_laps, y=froz_times - base_time, mode="lines", name="FROZEN (Lap 2)", line=dict(color="#888888", dash="dot", width=1.5)))
+
+    for m in model_results:
+        fut_deg = m["fut_times"] - base_time
+        width = 2.5 if "GRU" in m["name"] else 2.0
+        fig.add_trace(go.Scatter(x=m["fut_laps"], y=fut_deg, mode="lines", name=m["name"], line=dict(color=m["color"], dash=m["dash"], width=width)))
+
+    fig.add_hline(y=threshold, line_dash="dash", line_color="red", annotation_text="Cliff (+1.0 s)")
+    fig.update_layout(
+        title="TyreSense Four-Model Degradation Trajectory Comparison",
+        xaxis_title="Stint Lap", yaxis_title="Degradation vs baseline (s)",
+        height=480, margin=dict(l=40, r=40, t=50, b=40)
+    )
+    return fig
+
+
+def render_comparison_table(model_results):
+    """Render comparison summary table showing cliff lap and remaining usable life for all 4 models."""
+    import pandas as pd
+    rows = []
+    for m in model_results:
+        cliff_str = f"Lap {m['cliff_lap']}" if m["cliff_lap"] is not None else "None detected (> 20 laps)"
+        detected_str = "Yes" if m["cliff_lap"] is not None else "No"
+        rows.append({
+            "Model": m["name"],
+            "Predicted Cliff Lap": cliff_str,
+            "Remaining Usable Laps": m["rem_life"],
+            "Cliff Detected in Horizon?": detected_str,
+        })
+    df = pd.DataFrame(rows)
+    st.subheader("Model Comparison Summary")
+    st.dataframe(df, width="stretch", hide_index=True)
 
 
 COMPOUND_TRAIN_MEDIANS = {"HARD": 14, "MEDIUM": 11, "SOFT": 9}

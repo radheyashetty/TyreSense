@@ -17,10 +17,10 @@ def update_k_factor(k, k_history, actual_t, base_t, g_t, is_spike=False, eta=0.3
 
 
 def compute_cliff_life(forecast_deg, threshold_s=1.0):
-    """Determine remaining laps until forecast degradation crosses threshold."""
-    cross_idx = np.where(forecast_deg >= threshold_s)[0]
-    if len(cross_idx) > 0:
-        return int(cross_idx[0] + 1)
+    """Determine remaining laps until forecast degradation crosses threshold for 2 consecutive laps."""
+    for i in range(len(forecast_deg) - 1):
+        if forecast_deg[i] >= threshold_s and forecast_deg[i + 1] >= threshold_s:
+            return int(i + 1)
     return None
 
 

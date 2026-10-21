@@ -156,35 +156,95 @@ The downstream pipeline in F3 must implement:
 
 ---
 
-## Viva Preparation Cards (Key Concepts & Defense)
+## Task T3.1 / Phase 1 — Neural Forecast Dashboard Connection (Date: 2026-10-21)
+- What it does: Connects PyTorch `GRUForecaster`, `LSTMForecaster`, and `Vanilla RNN` model checkpoints directly into `src/app_forecast.py` forward passes via `predict_neural_residuals`.
+- Why: Previously, the Streamlit app loaded neural checkpoints but bypassed their inference, generating all forecasts from the heuristic baseline curve. This safely connects model forward passes to user telemetry selection without breaking existing APIs.
+- What breaks: Missing track or compound IDs in categorical maps would raise unhandled key errors without fallback default embeddings.
 
-### 1. Fuel Scaling
-- **Concept**: $c_{\text{track}} = c_{\text{base}} \times (\text{Circuit Length} / 5.0\text{ km})$.
-- **Why**: Fuel mass penalty per lap depends directly on lap distance and engine duty cycle. A 7 km circuit (Spa) burns more fuel per lap than a 3.3 km track (Monaco), so a uniform $0.03\text{ s/lap}$ constant over-penalizes short tracks and under-penalizes long tracks.
-- **Empirical Proof**: Track-scaled fuel yields the lowest residual pace MAE ($0.765\text{ s}$ vs $0.768\text{ s}$ for constant).
+## Task T3.2 / Phase 2 & 2.1 — Cliff Detection & Forecast Mathematics (Date: 2026-10-21)
+- What it does: Standardizes cliff detection across `src/clean.py`, `src/app_forecast.py`, and `src/live.py` to require two consecutive laps with fuel-corrected degradation $\ge +1.0\text{ s}$ above baseline, returning the first qualifying lap. Clarifies continuity-adjusted forecast reconstruction versus direct target reconstruction.
+- Why: Eliminates false-alarm single-lap spikes in the UI and aligns live forecast cliff detection with ground-truth labels used during dataset preprocessing.
+- What breaks: Evaluating cliff on single-lap threshold crossings caused premature pit warnings on driver lockups or traffic laps.
 
-### 2. Causal Spike Filtering
-- **Concept**: A lap is flagged as a traffic/anomaly spike if $t_{\text{lap}} - t_{\text{lap}-1} > 2.0\text{ s}$ and subsequent laps recover ($t_{\text{lap}+1} - t_{\text{lap}} < -1.0\text{ s}$).
-- **Why**: In causal online inference, future laps are unseen. In `flag_spikes_causal`, a lap is flagged immediately if pace degrades $> 2.0\text{ s}$ relative to rolling median pace, preventing dirty air or momentary yellow flags from distorting the degradation curve.
-- **What Breaks**: If spikes aren't flagged, single-lap traffic anomalies corrupt the wear multiplier $k$.
+## Task T3.3 / Phase 3 — Four-Model Comparison Interface & Validation (Date: 2026-10-21)
+- What it does: Adds "Compare All Models" to the Streamlit sidebar, plots GRU, LSTM, Vanilla RNN, and Model E on a single Plotly figure, displays a multi-model metrics table, and generates `reports/four_model_validation_summary.csv`.
+- Why: Allows instantaneous visual and quantitative comparison of all four modeling approaches on the identical observed stint without altering baseline conditions or leaking future laps.
+- What breaks: Running separate uncoordinated forward passes on differing input tensors would produce inconsistent forecast baselines.
 
-### 3. Monotone Head
-- **Concept**: $\hat{y}_{\text{res}}[h] = \hat{y}_{\text{res}}[0] + \sum_{i=1}^h \exp(w_i) \cdot \Delta$.
-- **Why**: Physical tyre wear cannot heal during a dry stint. Enforcing positive incremental outputs via exponential parametrization guarantees non-decreasing degradation predictions.
-- **What Breaks**: Standard unconstrained dense heads frequently predict unphysical pace recovery at long horizons ($h \ge 10$).
+## Task T3.4 / Phase 1.1 — Extended Test Verification & Rule R3 Audit (Date: 2026-10-22)
+- What it does: Executes and validates the full extended test suite (`pytest -m data` with 18 passed in 45.25s, `pytest -m slow` with 1 passed in 66.94s) while maintaining zero access to the locked 2025 test dataset (`data/processed/test_laps.parquet`).
+- Why: Proves full repository invariant integrity and determinism across all 148 test items before final submission documentation.
+- What breaks: Running unmasked data tests against test-split parquets would violate rule R3 and compromise scientific generalizability.
 
-### 4. Asymmetric Huber Loss
-- **Concept**: $\mathcal{L}_{\text{asym}}(r) = w_+ \cdot \mathcal{L}_{\text{Huber}}(r)$ if $r > 0$ else $(1 - w_+) \cdot \mathcal{L}_{\text{Huber}}(r)$.
-- **Why**: Underestimating tyre degradation ($r > 0$, where actual lap times are slower than predicted) causes cars to be caught out on worn tyres past the cliff, losing seconds per lap. Asymmetric weighting penalizes optimistic errors more severely.
+---
 
-### 5. Pit Window Error (PWE)
-- **Concept**: $\text{PWE} = |\hat{L}_{\text{cliff}} - L_{\text{cliff}}|$, measuring error in laps until the $+1.0\text{ s}$ degradation cliff.
-- **Why**: MAE in seconds does not directly reflect strategic utility. Race strategists need to know which lap to pit; PWE measures strategy error in actionable units (laps).
+## Comprehensive Viva Examination Preparation & Defense Guide
 
-### 6. Uncertainty Interval Scale Factor ($s$)
-- **Concept**: $Q_{10} = P_{50} + s \cdot (P_{10} - P_{50})$, $Q_{90} = P_{50} + s \cdot (P_{90} - P_{50})$.
-- **Why**: Raw MC-dropout intervals are typically under-dispersed due to correlated epistemic sampling. Calibrating $s$ via grid search matches empirical coverage to the nominal 80% credible interval on validation data.
+### 1. Problem Statement & Research Motivation
+- **Q**: What problem does TyreSense solve, and why is it important in Formula 1?
+- **A**: Modern F1 strategy hinges on determining when a tyre's pace degrades past a critical threshold (the tyre cliff). However, fuel consumption constantly lightens the car by $\sim 1.5\text{--}2.0\text{ kg}$ per lap (a gain of $\sim 0.03\text{ s/lap}$), which masks tyre degradation in raw telemetry. TyreSense decouples fuel burn from tyre wear using track-scaled physics corrections and predicts multi-horizon degradation and remaining usable tyre life using deep recurrent neural networks and adaptive physics models.
 
-### 7. Online Wear Multiplier ($k$)
-- **Concept**: $k_{\text{new}} = \text{clip}\left(k + \eta \cdot \frac{g_t \cdot e_t}{g_t^2 + 0.05},\, 0.5,\, 2.0\right)$.
-- **Why**: Adjusts the pre-race degradation slope $g_t$ up or down based on actual observed residual error $e_t$. The normalized denominator prevents division by zero when baseline degradation is small, and clipping bounds adaptation to physically realistic wear rates.
+### 2. Recurrent Architectures for Telemetry
+- **Q**: Why use recurrent neural networks (RNN, LSTM, GRU) for sequential lap data?
+- **A**: Tyre wear is non-Markovian; degradation depends not just on the current lap, but on the accumulated thermal and mechanical history of preceding laps (e.g., sliding, lockups, tyre graining). Recurrent architectures maintain hidden states that compress variable-length sequential stint histories into a compact representation, enabling multi-step ahead residual predictions ($h = 1, \dots, 20$).
+
+### 3. Comparison of GRU, LSTM, and Vanilla RNN
+- **Q**: What are the architectural differences between GRU, LSTM, and Vanilla RNN in this project?
+- **A**:
+  - **Vanilla RNN (Elman)**: $h_t = \tanh(W x_t + U h_{t-1} + b)$. Simple recurrence with no gating mechanism; vulnerable to vanishing gradients on sequences longer than 10–15 laps.
+  - **LSTM**: Maintains a separate cell state $c_t$ and hidden state $h_t$, regulated by input, forget, and output gates: $f_t = \sigma(W_f x_t + U_f h_{t-1})$, $c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t$, $h_t = o_t \odot \tanh(c_t)$. Additive cell state updates eliminate vanishing gradient bottlenecks.
+  - **GRU**: Merges cell and hidden states into $h_t$ using reset ($r_t$) and update ($z_t$) gates: $h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t$. Achieves similar long-term memory capacity as LSTM with fewer parameters and faster training.
+  - **Parameter Budget Parity**: To ensure fair scientific comparison, models are capacity-matched within 1.6% (GRU: 5,802 params; LSTM: 5,770 params; RNN: 5,864 params).
+
+### 4. Model E: Physics-Guided Adaptive Approach
+- **Q**: What is Model E and how does its physics-guided approach differ from the neural networks?
+- **A**: Model E does not optimize neural weights. It begins with a pre-race quadratic baseline curve $B(t) = a t^2 + b t + c$ and applies an online wear multiplier $k$ updated via a normalized delta-rule:
+  $$k_{t+1} = \text{clip}\left(k_t + \eta \frac{g_t \cdot (y_t - \hat{y}_t)}{g_t^2 + 0.05},\, 0.5,\, 2.0\right)$$
+  where $g_t$ is baseline degradation gradient, $\eta = 0.3$, and a 3-lap moving average smooths noise. Model E adapts instantly to real-time track abrasion changes without extensive offline training.
+
+### 5. Benchmark Performance: Persistence vs Neural Networks
+- **Q**: Why does simple persistence beat neural models on lap-time MAE at short horizons?
+- **A**: During the early-to-mid phase of a stint (cutoff lap 5), degradation is gradual and lap times remain relatively flat. Persistence ($\hat{y}_{t+h} = y_t$) has zero variance from model parameter misestimation, achieving low MAE ($0.352\text{ s}$ at $h=1$, $0.720\text{ s}$ at $h=10$). Neural networks predict trend curvature, which introduces minor variance on normal laps. We report this result honestly: neural networks do not beat persistence on point-wise MAE on this split.
+
+### 6. Metric Definitions: MAE vs Cliff PWE
+- **Q**: What do lap-time MAE and cliff Point-Wise Error (PWE) measure, and why are both necessary?
+- **A**:
+  - **Lap-time MAE (seconds)**: Measures point-by-point tracking accuracy across future laps.
+  - **Cliff PWE (laps)**: Measures the absolute error in predicting the exact lap when tyre degradation crosses the $+1.0\text{ s}$ cliff threshold ($|\hat{L}_{\text{cliff}} - L_{\text{cliff}}|$).
+  - **Divergence**: Persistence achieves the lowest lap-time MAE but the worst cliff PWE ($9.34$ laps), because a flat horizontal prediction cannot anticipate accelerating wear. GRU achieves the best cliff PWE ($6.51$ laps), demonstrating strategic forecasting utility despite slightly higher point MAE.
+
+### 7. Two-Consecutive-Lap Cliff Rule
+- **Q**: Why is a two-consecutive-lap threshold crossing required for cliff detection?
+- **A**: Single-lap pace drops frequently occur due to non-tyre events: backmarker traffic, brief tyre lockups, yellow flags, or battery harvesting. Requiring two consecutive laps $\ge +1.0\text{ s}$ slower than the baseline filters transient disturbances and ensures the pit-stop recommendation reflects true tyre degradation.
+
+### 8. Data Leakage & Temporal Split Protocol
+- **Q**: What are data leakage and temporal validation, and how does TyreSense prevent leakage?
+- **A**: Data leakage occurs when future information or test distributions inadvertently contaminate the training process. In time-series telemetry, random k-fold splitting causes severe leakage because laps from the same race or future seasons would predict past laps. TyreSense uses strict temporal partitioning:
+  - 2022–2023 for training (38 races)
+  - 2024 for validation and conformal calibration (21 races)
+  - 2025 locked test split (20 races)
+  Baseline curves, scaler statistics, and embeddings are fitted strictly on the training set.
+
+### 9. R3 Test Isolation Policy
+- **Q**: Why is the 2025 test set kept locked until the final submission?
+- **A**: Under Rule R3, keeping the test set locked prevents researcher degrees of freedom, hyperparameter tuning to the test set, and p-hacking. It ensures that reported final test metrics reflect genuine real-world generalization to an unseen Formula 1 season.
+
+### 10. System Limitations & Technical Boundaries
+- **Q**: What are the main technical limitations of TyreSense?
+- **A**:
+  1. Observational confounding: Telemetry cannot directly observe dirty air (aerodynamic wake) or engine mode adjustments (ERS/DRS).
+  2. Unobservable physical wear: Real tyre degradation is governed by internal carcass and surface temperatures; TyreSense infers wear solely from lap-time proxies.
+  3. Average cliff error: A cliff timing error of $\sim 6.5$ laps means forecasts indicate a strategic window rather than a single exact lap.
+
+### 11. Counterfactual Compound Recommendations
+- **Q**: Why does TyreSense not currently recommend whether to fit Soft, Medium, or Hard tyres?
+- **A**: Recommending an unchosen compound is a counterfactual prediction. Observational data only reveals how the fitted tyre performed. Recommending a different compound requires knowing how it would degrade under identical track temperature, rubbering, and race traffic, which cannot be validated without a calibrated multi-agent race simulation engine.
+
+### 12. Strategic Pit-Stop Requirements
+- **Q**: What additional evidence and engineering would be needed before using this system in real-time F1 race strategy?
+- **A**:
+  1. High-frequency telemetry integration ($10\text{ Hz}$ wheel speed, steering angle, tyre surface temperatures).
+  2. Integration with a track-position and pit-loss model (accounting for the $20\text{--}25\text{ s}$ pit-lane time delta and traffic re-entry windows).
+  3. Real-time safety car and VSC probability integration.
+  4. Live shadow testing across multiple race weekends alongside strategy engineers.
+

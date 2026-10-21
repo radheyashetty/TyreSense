@@ -30,6 +30,27 @@ def load_app_data():
     return laps, stints, curves, global_curve
 
 
+def load_app_maps(laps):
+    """Build track and compound integer encoding maps from train seasons."""
+    season_col = laps["season"] if "season" in laps.columns else laps["race_id"].str.slice(0, 4)
+    train_laps = laps[season_col.isin(["2022", "2023"])]
+    track_map = {t: i + 1 for i, t in enumerate(sorted(train_laps["track_id"].unique()))}
+    compound_map = {c: i + 1 for i, c in enumerate(sorted(train_laps["compound"].unique()))}
+    return track_map, compound_map
+
+
+_MAPS_CACHE = None
+
+
+def get_cached_maps():
+    """Retrieve or compute cached track and compound encoding maps."""
+    global _MAPS_CACHE
+    if _MAPS_CACHE is None:
+        laps = pd.read_parquet("data/processed/laps.parquet")
+        _MAPS_CACHE = load_app_maps(laps)
+    return _MAPS_CACHE
+
+
 def load_conformal_quantile():
     """Load 80% coverage conformal quantile from reports json."""
     q_path = "reports/conformal_quantiles.json"

@@ -26,7 +26,7 @@ def apply_basic_filters(df, attrition_list):
     sc_mask = ~df["TrackStatus"].astype(str).str.contains("[4567]")
     df = filter_step(df, sc_mask, "drop_sc_vsc", attrition_list)
     # Retain accurate laps: FastF1 boolean True/False; OpenF1 NaN defaults to True
-    acc_mask = df["IsAccurate"].fillna(True).astype(bool)
+    acc_mask = (df["IsAccurate"] != False)
     if "Deleted" in df.columns:
         acc_mask = acc_mask & (~(df["Deleted"] == True))
     df = filter_step(df, acc_mask, "drop_inaccurate_deleted", attrition_list)
