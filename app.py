@@ -168,7 +168,7 @@ def run_app_view(laps, curves, global_curve, selected_stint, session, model_choi
     render_dashboard_metrics(observed, curr_lap, max_lap, est_fuel, rem_life, pit_window)
     st.sidebar.markdown(f"**Online Wear Multiplier ($k$):** `{k_val:.3f}`")
     fig = plot_stint_replay(observed, fut_laps, fut_times, base_time, froz_times=froz_times, curr_lap=curr_lap)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def main():
