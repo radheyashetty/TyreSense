@@ -117,7 +117,7 @@ def prepare_and_train_baselines(train_laps, val_laps, horizons):
     return val_targets, preds, compounds
 
 
-def run_baseline_evaluation(train_laps, val_laps, stints_df, config_path="config.yaml"):
+def run_baseline_evaluation(train_laps, val_laps, stints_df, config_path="config.yaml", out_path=None):
     """Train Models A, B, C and compute MAE at horizons 1, 5, 10 and censored shares."""
     config = load_config(config_path)
     reports_dir = config["paths"]["reports_dir"]
@@ -131,7 +131,8 @@ def run_baseline_evaluation(train_laps, val_laps, stints_df, config_path="config
     table_df = compile_baseline_table(
         val_laps, val_targets, models, shares, horizons, compounds
     )
-    table_path = os.path.join(reports_dir, "baseline_table.csv")
-    table_df.to_csv(table_path, index=False)
-    print(f"Saved baseline table to {table_path}")
+    table_path = out_path if out_path is not None else os.path.join(reports_dir, "baseline_table.csv")
+    if out_path is not None or not os.path.exists(table_path):
+        table_df.to_csv(table_path, index=False)
+        print(f"Saved baseline table to {table_path}")
     return table_df

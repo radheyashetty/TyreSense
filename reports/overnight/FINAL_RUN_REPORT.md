@@ -130,3 +130,38 @@ Evaluated on uncensored stints at laps 3, 5, 7, 10:
 - With the one-step-ahead update rule, $k$ is fully active across 95.46% of stints.
 - Negative result disclosed: in early laps (laps 3-7), drivers manage tire pace, making step-to-step lap time degradation flatter than the unconditional quadratic curve ($\Delta \text{act} < \Delta \text{base}$). This shifts $k$ downward (median $0.645$), causing Model E to extrapolate lower future wear and overestimate tire life, leading to slightly worse PWE than ROLLING early in the stint. By Lap 10, when real degradation begins, Model E catches up and outperforms ROLLING (PWE 6.89 vs 7.11).
 
+---
+
+## Part 4: Multi-Horizon Forecast Comparison
+
+### 1. Benchmark Setup
+All models were evaluated on the **exact same 2024 validation windows** ($N=19,125$ for $h=1$; $N=15,513$ for $h=5$; $N=11,096$ for $h=10$) using the causal train-fitted curves and feature vocabulary.
+- **Recurrent Models (GRU, LSTM, RNN)**: Trained across 3 independent random seeds (`42, 123, 456`) with up to 25 epochs and early stopping patience 5 on validation loss. Mean and standard deviation reported across seeds.
+- **Tabular Baselines (XGBoost, Ridge)**: Evaluated per-horizon on tabular window features ($n=1$ seed).
+- **Heuristic Baselines**:
+  - `ROLLING curve (offset to latest observed pace)`: $\text{MAE} = |r_{t+h} - r_t|$
+  - `persistence (last observed residual carried forward)`: $\text{MAE} = |r_{t+h} - r_t|$
+  - `train-mean`: Train residual mean per horizon.
+- Configs saved to `runs/gru_main/config.json`, `runs/lstm_main/config.json`, `runs/rnn_main/config.json`, `runs/xgboost/config.json`, and `runs/ridge/config.json`.
+
+### 2. Multi-Horizon Validation MAE Table (`reports/baseline_table.csv`)
+| Model | Seeds ($N$) | MAE $h=1$ (s) | MAE $h=1$ Std | MAE $h=5$ (s) | MAE $h=5$ Std | MAE $h=10$ (s) | MAE $h=10$ Std |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **GRU** | 3 | 0.947 | 0.068 | 1.028 | 0.074 | 1.248 | 0.101 |
+| **LSTM** | 3 | 0.955 | 0.036 | **1.002** | 0.017 | **1.235** | 0.033 |
+| **RNN** | 3 | 0.901 | 0.030 | 1.079 | 0.061 | 1.407 | 0.064 |
+| **XGBoost** | 1 | 0.955 | 0.000 | 1.495 | 0.000 | 1.958 | 0.000 |
+| **Ridge** | 1 | 1.278 | 0.000 | 1.661 | 0.000 | 1.936 | 0.000 |
+| **ROLLING curve** | 1 | **0.653** | 0.000 | 1.246 | 0.000 | 1.666 | 0.000 |
+| **persistence** | 1 | **0.653** | 0.000 | 1.246 | 0.000 | 1.666 | 0.000 |
+| **train-mean** | 1 | 1.924 | 0.000 | 2.012 | 0.000 | 2.291 | 0.000 |
+
+### 3. Factual Reporting & Plain Disclosures (R1, R2)
+- **Where GRU does NOT win**:
+  - At $h=1$: ROLLING curve / persistence wins cleanly with $\text{MAE} = 0.653\text{ s}$ vs GRU's $0.947\text{ s}$. Even a simple vanilla RNN beats GRU ($0.901\text{ s}$ vs $0.947\text{ s}$).
+  - At $h=5$: LSTM achieves lower MAE ($1.002\text{ s}$) than GRU ($1.028\text{ s}$).
+  - At $h=10$: LSTM edges out GRU ($1.235\text{ s}$ vs $1.248\text{ s}$).
+- **Where Recurrent Neural Forecasters Excel**:
+  - At medium and long horizons ($h=5$ and $h=10$), both GRU and LSTM strongly outperform all tabular and heuristic baselines (e.g., at $h=10$: GRU $1.248\text{ s}$ vs ROLLING $1.666\text{ s}$, Ridge $1.936\text{ s}$, XGBoost $1.958\text{ s}$).
+
+

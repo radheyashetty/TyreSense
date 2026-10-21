@@ -1,0 +1,15 @@
+{
+  "num_numeric": 8,
+  "track_emb_dim": 4,
+  "compound_emb_dim": 3,
+  "hidden_dim": 32,
+  "max_epochs": 25,
+  "patience": 5,
+  "lr": 0.001,
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "model_type": "lstm"
+}
